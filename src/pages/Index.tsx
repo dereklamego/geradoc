@@ -3,24 +3,38 @@ import { Footer } from "@/components/layout/Footer";
 import { Hero } from "@/components/sections/Hero";
 import { Features } from "@/components/sections/Features";
 import { HowItWorks } from "@/components/sections/HowItWorks";
-import { Statistics } from "@/components/sections/Statistics";
 import { Pricing } from "@/components/sections/Pricing";
-import { Integrations } from "@/components/sections/Integrations";
-import { Testimonials } from "@/components/sections/Testimonials";
 import { CTA } from "@/components/sections/CTA";
+import { Testimonials } from "@/components/sections/Testimonials";
+import { Statistics } from "@/components/sections/Statistics";
+import { useEffect } from "react";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/app');
+      }
+    }
+  }, [user, navigate]);
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
       <main>
         <Hero />
+        <Statistics />
         <Features />
         <HowItWorks />
-        <Statistics />
-        <Pricing />
-        <Integrations />
         <Testimonials />
+        <Pricing />
         <CTA />
       </main>
       <Footer />

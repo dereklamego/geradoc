@@ -13,28 +13,21 @@ const menuItems = [
         title: "Gerador de Contratos",
         description: "Crie contratos profissionais em minutos",
         icon: FileText,
-        href: "/gerador",
+        href: "/recursos/gerador",
         color: "primary",
       },
       {
         title: "Modelos Prontos",
         description: "Diversos modelos para seu negócio",
         icon: BookOpen,
-        href: "/modelos",
+        href: "/recursos/modelos",
         color: "secondary",
-      },
-      {
-        title: "Automação",
-        description: "Automatize seus processos contratuais",
-        icon: Zap,
-        href: "/automacao",
-        color: "accent",
       },
       {
         title: "Relatórios",
         description: "Acompanhe suas métricas e resultados",
         icon: BarChart3,
-        href: "/relatorios",
+        href: "/recursos/relatorios",
         color: "primary",
       },
     ],
@@ -120,9 +113,9 @@ export function Header() {
         <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <img 
-              src={logoGeradoc} 
-              alt="GeraDoc" 
+            <img
+              src={logoGeradoc}
+              alt="GeraDoc"
               className="h-12 md:h-14 w-auto transition-transform group-hover:scale-105"
             />
           </Link>
@@ -178,9 +171,8 @@ export function Header() {
               <Link
                 key={link.href}
                 to={link.href}
-                className={`px-4 py-2 text-sm font-medium transition-colors font-display ${
-                  isActive(link.href) ? "text-primary" : "text-muted-foreground hover:text-foreground"
-                }`}
+                className={`px-4 py-2 text-sm font-medium transition-colors font-display ${isActive(link.href) ? "text-primary" : "text-muted-foreground hover:text-foreground"
+                  }`}
               >
                 {link.label}
               </Link>
@@ -193,7 +185,7 @@ export function Header() {
               <Link to="/login">Conectar</Link>
             </Button>
             <Button size="sm" asChild>
-              <Link to="/cadastro">Cadastre-se</Link>
+              <Link to="/register">Cadastre-se</Link>
             </Button>
           </div>
 
@@ -257,7 +249,7 @@ export function Header() {
                   <Link to="/login">Conectar</Link>
                 </Button>
                 <Button asChild>
-                  <Link to="/cadastro">Cadastre-se</Link>
+                  <Link to="/register">Cadastre-se</Link>
                 </Button>
               </div>
             </nav>

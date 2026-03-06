@@ -1,436 +1,352 @@
-import { useState } from "react";
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { Button } from "@/components/ui/button";
-import { motion } from "framer-motion";
+import React, { useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-  FileText,
-  Briefcase,
-  Users,
-  ShieldCheck,
-  Handshake,
-  FileCheck,
-  ChevronRight,
-  Download,
+  Check,
+  ChevronsUpDown,
+  Plus,
+  Trash2,
   ArrowLeft,
+  ArrowRight,
+  FileText,
+  Save,
+  Download
 } from "lucide-react";
-import { Link } from "react-router-dom";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { cn } from "@/lib/utils";
+import { toast } from 'sonner';
+import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
+import DocumentPDF from '@/components/documents/DocumentPDF';
 
-const contractTypes = [
-  {
-    id: "prestacao-servicos",
-    icon: Briefcase,
-    title: "Prestação de Serviços",
-    description: "Para freelancers, consultores e prestadores de serviço em geral",
-    popular: true,
-    color: "primary",
-  },
-  {
-    id: "parceria",
-    icon: Handshake,
-    title: "Contrato de Parceria",
-    description: "Para parcerias comerciais, co-criação e colaborações",
-    color: "secondary",
-  },
-  {
-    id: "confidencialidade",
-    icon: ShieldCheck,
-    title: "NDA / Confidencialidade",
-    description: "Proteja informações sensíveis e segredos de negócio",
-    color: "accent",
-  },
-  {
-    id: "trabalho-freelancer",
-    icon: Users,
-    title: "Contrato Freelancer",
-    description: "Modelo específico para trabalhos pontuais e projetos",
-    color: "primary",
-  },
-  {
-    id: "termo-uso",
-    icon: FileCheck,
-    title: "Termo de Uso",
-    description: "Para sites, aplicativos e plataformas digitais",
-    color: "secondary",
-  },
-  {
-    id: "outros",
-    icon: FileText,
-    title: "Outros Modelos",
-    description: "Explore mais opções de contratos disponíveis",
-    color: "accent",
-  },
+// Mock data constants
+const CLIENTS = [
+  { id: '1', name: 'Carlos Oliveira', document: '123.456.789-00', phone: '(11) 98888-7777', address: 'Rua das Flores, 10' },
+  { id: '2', name: 'Logística Express Ltda', document: '12.345.678/0001-90', phone: '(11) 3333-4444', address: 'Av. Paulista, 1000' },
 ];
 
-type Step = "select" | "form" | "preview";
+const CATALOG = [
+  { id: 's1', name: 'Manutenção Preventiva AC', price: 150 },
+  { id: 's2', name: 'Carga de Gás R410A', price: 350 },
+  { id: 's3', name: 'Instalação Split 9000 BTUs', price: 600 },
+];
 
-const getIconBg = (color: string) => {
-  switch (color) {
-    case "primary":
-      return "gradient-primary";
-    case "secondary":
-      return "gradient-secondary";
-    case "accent":
-      return "gradient-accent";
-    default:
-      return "gradient-primary";
-  }
-};
+const Generator = () => {
+  const { user } = useAuth();
+  const [step, setStep] = useState(1);
+  const [selectedClient, setSelectedClient] = useState<typeof CLIENTS[0] | null>(null);
+  const [docType, setDocType] = useState('Orçamento');
+  const [selectedServices, setSelectedServices] = useState<Array<{ id: string; name: string; price: number; quantity: number }>>([]);
+  const [isClientPopoverOpen, setIsClientPopoverOpen] = useState(false);
 
-export default function Generator() {
-  const [step, setStep] = useState<Step>("select");
-  const [selectedContract, setSelectedContract] = useState<string | null>(null);
+  // Stepper logic
+  const nextStep = () => setStep((s) => Math.min(s + 1, 4));
+  const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
-  const handleSelectContract = (id: string) => {
-    setSelectedContract(id);
-    setStep("form");
+  const totalValue = selectedServices.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
+
+  const addService = (service: typeof CATALOG[0]) => {
+    setSelectedServices(prev => {
+      const exists = prev.find(s => s.id === service.id);
+      if (exists) {
+        return prev.map(s => s.id === service.id ? { ...s, quantity: s.quantity + 1 } : s);
+      }
+      return [...prev, { ...service, quantity: 1 }];
+    });
+    toast.success('Serviço adicionado');
   };
 
-  const handleBack = () => {
-    if (step === "form") {
-      setStep("select");
-      setSelectedContract(null);
-    } else if (step === "preview") {
-      setStep("form");
-    }
+  const removeService = (id: string) => {
+    setSelectedServices(prev => prev.filter(s => s.id !== id));
   };
 
-  const selectedContractData = contractTypes.find((c) => c.id === selectedContract);
+  const updateQuantity = (id: string, qty: number) => {
+    if (qty < 1) return;
+    setSelectedServices(prev => prev.map(s => s.id === id ? { ...s, quantity: qty } : s));
+  };
+
+  const handleFinish = () => {
+    toast.success('Documento salvo e registrado com sucesso!');
+    // In a real app, here we would save to DB
+    setStep(1);
+    setSelectedClient(null);
+    setSelectedServices([]);
+  };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-24 pb-20">
-        <div className="container mx-auto px-4">
-          {/* Header */}
-          <div className="max-w-3xl mx-auto text-center mb-12">
-            <motion.h1
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-3xl md:text-4xl font-display text-foreground mb-4"
-            >
-              {step === "select" && "Escolha o tipo de contrato"}
-              {step === "form" && selectedContractData?.title}
-              {step === "preview" && "Visualização do Contrato"}
-            </motion.h1>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="text-lg text-muted-foreground font-body"
-            >
-              {step === "select" &&
-                "Selecione o modelo que melhor atende sua necessidade"}
-              {step === "form" &&
-                "Preencha os dados para gerar seu contrato personalizado"}
-              {step === "preview" && "Revise seu contrato antes de baixar"}
-            </motion.p>
-          </div>
-
-          {/* Progress Indicator */}
-          <div className="max-w-xl mx-auto mb-12">
-            <div className="flex items-center justify-center gap-4">
-              {["Modelo", "Dados", "PDF"].map((label, index) => {
-                const stepIndex =
-                  step === "select" ? 0 : step === "form" ? 1 : 2;
-                const isActive = index <= stepIndex;
-                const isCurrent = index === stepIndex;
-
-                return (
-                  <div key={label} className="flex items-center gap-4">
-                    <div className="flex flex-col items-center gap-2">
-                      <div
-                        className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-display font-bold transition-all ${
-                          isActive
-                            ? "gradient-primary text-white shadow-md"
-                            : "bg-muted text-muted-foreground"
-                        } ${isCurrent ? "ring-4 ring-primary/20 scale-110" : ""}`}
-                      >
-                        {index + 1}
-                      </div>
-                      <span
-                        className={`text-sm font-medium font-display ${
-                          isActive ? "text-foreground" : "text-muted-foreground"
-                        }`}
-                      >
-                        {label}
-                      </span>
-                    </div>
-                    {index < 2 && (
-                      <div
-                        className={`w-16 h-0.5 mb-6 rounded-full ${
-                          index < stepIndex ? "bg-primary" : "bg-muted"
-                        }`}
-                      />
-                    )}
-                  </div>
-                );
-              })}
+    <div className="space-y-6 max-w-4xl mx-auto">
+      {/* Steps Indicator */}
+      <div className="flex items-center justify-between mb-8 px-4">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="flex flex-col items-center gap-2">
+            <div className={cn(
+              "h-10 w-10 rounded-full flex items-center justify-center font-bold text-sm border-2 transition-all",
+              step === i ? "bg-primary text-white border-primary" :
+                step > i ? "bg-primary/20 text-primary border-primary/20" : "bg-white text-muted-foreground border-slate-200"
+            )}>
+              {step > i ? <Check className="h-5 w-5" /> : i}
             </div>
+            <span className={cn("text-xs font-medium", step >= i ? "text-primary" : "text-muted-foreground")}>
+              {i === 1 ? 'Cliente' : i === 2 ? 'Tipo' : i === 3 ? 'Serviços' : 'Finalizar'}
+            </span>
           </div>
+        ))}
+      </div>
 
-          {/* Back Button */}
-          {step !== "select" && (
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="max-w-4xl mx-auto mb-8"
-            >
-              <Button variant="ghost" onClick={handleBack} className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Voltar
-              </Button>
-            </motion.div>
+      <Card className="shadow-lg border-primary/5">
+        <CardHeader>
+          <CardTitle>
+            {step === 1 && "Selecione o Cliente"}
+            {step === 2 && "Tipo de Documento"}
+            {step === 3 && "Adicionar Serviços"}
+            {step === 4 && "Preview e Conclusão"}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="min-h-[300px]">
+          {/* Step 1: Select Client */}
+          {step === 1 && (
+            <div className="space-y-4">
+              <Label>Buscar Cliente</Label>
+              <Popover open={isClientPopoverOpen} onOpenChange={setIsClientPopoverOpen}>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    role="combobox"
+                    aria-expanded={isClientPopoverOpen}
+                    className="w-full justify-between h-12 text-lg"
+                  >
+                    {selectedClient ? selectedClient.name : "Selecione um cliente..."}
+                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-full p-0" align="start">
+                  <Command>
+                    <CommandInput placeholder="Digite o nome..." />
+                    <CommandList>
+                      <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                      <CommandGroup>
+                        {CLIENTS.map((client) => (
+                          <CommandItem
+                            key={client.id}
+                            value={client.name}
+                            onSelect={() => {
+                              setSelectedClient(client);
+                              setIsClientPopoverOpen(false);
+                            }}
+                          >
+                            <Check className={cn("mr-2 h-4 w-4", selectedClient?.id === client.id ? "opacity-100" : "opacity-0")} />
+                            {client.name}
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </CommandList>
+                  </Command>
+                </PopoverContent>
+              </Popover>
+
+              {selectedClient && (
+                <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 animate-in fade-in slide-in-from-top-2">
+                  <p className="font-semibold text-primary">{selectedClient.name}</p>
+                  <p className="text-sm text-muted-foreground">{selectedClient.document}</p>
+                  <p className="text-sm text-muted-foreground">{selectedClient.phone}</p>
+                </div>
+              )}
+            </div>
           )}
 
-          {/* Step Content */}
-          {step === "select" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto"
-            >
-              {contractTypes.map((contract, index) => (
-                <motion.button
-                  key={contract.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => handleSelectContract(contract.id)}
-                  className="relative bg-card rounded-2xl p-6 text-left border border-border/50 shadow-card hover:shadow-card-hover transition-all duration-300 hover:border-primary/30 group"
-                >
-                  {contract.popular && (
-                    <span className="absolute top-4 right-4 text-xs font-semibold font-display text-primary bg-primary/10 px-3 py-1 rounded-full">
-                      Popular
-                    </span>
+          {/* Step 2: Document Type */}
+          {step === 2 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {['Orçamento', 'Ordem de Serviço', 'Recibo'].map((type) => (
+                <div
+                  key={type}
+                  onClick={() => setDocType(type)}
+                  className={cn(
+                    "cursor-pointer p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-4 text-center",
+                    docType === type ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-slate-100 hover:border-primary/30"
                   )}
-                  <div className={`w-12 h-12 rounded-xl ${getIconBg(contract.color)} flex items-center justify-center mb-4 group-hover:scale-110 transition-transform shadow-sm`}>
-                    <contract.icon className="w-6 h-6 text-white" />
+                >
+                  <div className={cn("p-4 rounded-full", docType === type ? "bg-primary text-white" : "bg-slate-100")}>
+                    <FileText className="h-8 w-8" />
                   </div>
-                  <h3 className="text-lg font-display text-foreground mb-2">
-                    {contract.title}
-                  </h3>
-                  <p className="text-sm text-muted-foreground mb-4 font-body">
-                    {contract.description}
-                  </p>
-                  <div className="flex items-center text-sm font-medium font-display text-primary">
-                    Selecionar
-                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </motion.button>
+                  <span className="font-bold">{type}</span>
+                </div>
               ))}
-            </motion.div>
+            </div>
           )}
 
-          {step === "form" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-3xl mx-auto"
-            >
-              <div className="bg-card rounded-2xl border border-border/50 shadow-card p-8">
-                <form className="space-y-6">
-                  {/* Contratante Section */}
-                  <div>
-                    <h3 className="text-lg font-display text-foreground mb-4">
-                      Dados do Contratante
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium font-display text-foreground mb-2">
-                          Nome Completo / Razão Social
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body"
-                          placeholder="Digite aqui..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium font-display text-foreground mb-2">
-                          CPF / CNPJ
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body"
-                          placeholder="000.000.000-00"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Contratado Section */}
-                  <div>
-                    <h3 className="text-lg font-display text-foreground mb-4">
-                      Dados do Contratado
-                    </h3>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium font-display text-foreground mb-2">
-                          Nome Completo / Razão Social
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body"
-                          placeholder="Digite aqui..."
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium font-display text-foreground mb-2">
-                          CPF / CNPJ
-                        </label>
-                        <input
-                          type="text"
-                          className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body"
-                          placeholder="000.000.000-00"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Service Details */}
-                  <div>
-                    <h3 className="text-lg font-display text-foreground mb-4">
-                      Detalhes do Serviço
-                    </h3>
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium font-display text-foreground mb-2">
-                          Descrição do Serviço
-                        </label>
-                        <textarea
-                          rows={4}
-                          className="w-full px-4 py-3 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none font-body"
-                          placeholder="Descreva detalhadamente o serviço a ser prestado..."
-                        />
-                      </div>
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div>
-                          <label className="block text-sm font-medium font-display text-foreground mb-2">
-                            Valor Total (R$)
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body"
-                            placeholder="0,00"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium font-display text-foreground mb-2">
-                            Prazo de Execução
-                          </label>
-                          <input
-                            type="text"
-                            className="w-full h-11 px-4 rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body"
-                            placeholder="Ex: 30 dias"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="w-full"
-                      onClick={() => setStep("preview")}
-                    >
-                      Gerar Contrato
+          {/* Step 3: Add Services */}
+          {step === 3 && (
+            <div className="space-y-6">
+              <div className="flex flex-col gap-4">
+                <Label>Adicionar do Catálogo</Label>
+                <div className="flex flex-wrap gap-2">
+                  {CATALOG.map((item) => (
+                    <Button key={item.id} variant="outline" size="sm" onClick={() => addService(item)}>
+                      <Plus className="h-3 w-3 mr-1" /> {item.name}
                     </Button>
-                  </div>
-                </form>
+                  ))}
+                </div>
               </div>
-            </motion.div>
+
+              <div className="space-y-4">
+                <Label>Serviços Selecionados</Label>
+                {selectedServices.length > 0 ? (
+                  <div className="border rounded-lg overflow-hidden">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-50">
+                        <tr>
+                          <th className="text-left p-3">Descrição</th>
+                          <th className="text-center p-3">Qtd</th>
+                          <th className="text-right p-3">Preço</th>
+                          <th className="p-3"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y">
+                        {selectedServices.map((s) => (
+                          <tr key={s.id}>
+                            <td className="p-3 font-medium">{s.name}</td>
+                            <td className="p-3">
+                              <div className="flex items-center justify-center gap-2">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(s.id, s.quantity - 1)}>-</Button>
+                                <span>{s.quantity}</span>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => updateQuantity(s.id, s.quantity + 1)}>+</Button>
+                              </div>
+                            </td>
+                            <td className="p-3 text-right">R$ {(s.price * s.quantity).toFixed(2)}</td>
+                            <td className="p-3 text-right">
+                              <Button variant="ghost" size="icon" className="text-red-500 h-8 w-8" onClick={() => removeService(s.id)}>
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot className="bg-slate-50 font-bold">
+                        <tr>
+                          <td colSpan={2} className="p-3 text-right">TOTAL</td>
+                          <td className="p-3 text-right text-primary">R$ {totalValue.toFixed(2)}</td>
+                          <td></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center p-8 border-2 border-dashed rounded-lg text-muted-foreground">
+                    Selecione serviços acima para começar
+                  </div>
+                )}
+              </div>
+            </div>
           )}
 
-          {step === "preview" && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="max-w-4xl mx-auto"
+          {/* Step 4: Preview and Finish */}
+          {step === 4 && (
+            <div className="space-y-4 h-[600px] flex flex-col">
+              <div className="bg-slate-100 rounded-lg flex-1 overflow-hidden border">
+                <PDFViewer width="100%" height="100%" showToolbar={false} className="border-none">
+                  <DocumentPDF
+                    company={{
+                      name: user?.company_name || 'Minha Empresa',
+                      document: user?.document || '00.000.000/0001-00',
+                      phone: user?.phone || '(11) 9999-9999',
+                      address: 'Rua Principal, 123 - Cidade/UF'
+                    }}
+                    client={{
+                      name: selectedClient?.name || 'Cliente Genérico',
+                      document: selectedClient?.document || 'N/A',
+                      phone: selectedClient?.phone || 'N/A',
+                      address: selectedClient?.address || 'N/A'
+                    }}
+                    docType={docType}
+                    services={selectedServices}
+                    total={totalValue}
+                    date={new Date().toLocaleDateString('pt-BR')}
+                  />
+                </PDFViewer>
+              </div>
+              <div className="flex gap-4">
+                <PDFDownloadLink
+                  document={
+                    <DocumentPDF
+                      company={{
+                        name: user?.company_name || 'Minha Empresa',
+                        document: user?.document || '00.000.000/0001-00',
+                        phone: user?.phone || '(11) 9999-9999',
+                        address: 'Rua Principal, 123 - Cidade/UF'
+                      }}
+                      client={{
+                        name: selectedClient?.name || 'Cliente Genérico',
+                        document: selectedClient?.document || 'N/A',
+                        phone: selectedClient?.phone || 'N/A',
+                        address: selectedClient?.address || 'N/A'
+                      }}
+                      docType={docType}
+                      services={selectedServices}
+                      total={totalValue}
+                      date={new Date().toLocaleDateString('pt-BR')}
+                    />
+                  }
+                  fileName={`doc_${Date.now()}.pdf`}
+                  className="flex-1"
+                >
+                  {({ loading }) => (
+                    <Button variant="outline" className="w-full gap-2" disabled={loading}>
+                      <Download className="h-4 w-4" /> Download PDF
+                    </Button>
+                  )}
+                </PDFDownloadLink>
+                <Button className="flex-1 gap-2" onClick={handleFinish}>
+                  <Save className="h-4 w-4" /> Finalizar e Salvar
+                </Button>
+              </div>
+            </div>
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between border-t p-4 pt-6">
+          <Button
+            variant="ghost"
+            onClick={prevStep}
+            disabled={step === 1}
+            className="gap-1 px-4"
+          >
+            <ArrowLeft className="h-4 w-4" /> Anterior
+          </Button>
+
+          {step < 4 && (
+            <Button
+              onClick={nextStep}
+              disabled={step === 1 && !selectedClient}
+              className="gap-1 px-6 font-bold"
             >
-              <div className="grid lg:grid-cols-3 gap-8">
-                {/* Document Preview */}
-                <div className="lg:col-span-2">
-                  <div className="bg-card rounded-2xl border border-border/50 shadow-card overflow-hidden">
-                    <div className="bg-muted/50 px-6 py-4 border-b border-border flex items-center justify-between">
-                      <span className="font-display font-medium text-foreground">
-                        Prévia do Documento
-                      </span>
-                      <span className="text-xs text-muted-foreground bg-primary/10 text-primary px-2 py-1 rounded-full font-display">
-                        PDF • 2 páginas
-                      </span>
-                    </div>
-                    <div className="p-8 bg-background min-h-[500px]">
-                      {/* Mock Document Content */}
-                      <div className="max-w-lg mx-auto">
-                        <h2 className="text-xl font-display text-center text-foreground mb-8">
-                          CONTRATO DE PRESTAÇÃO DE SERVIÇOS
-                        </h2>
-                        <div className="space-y-4 text-sm text-muted-foreground leading-relaxed font-body">
-                          <p>
-                            <strong className="text-foreground font-display">CLÁUSULA PRIMEIRA – DAS PARTES</strong>
-                          </p>
-                          <p>
-                            De um lado, como <strong>CONTRATANTE</strong>, [Nome do Contratante], inscrito no CPF/CNPJ sob o nº [Número], doravante denominado simplesmente CONTRATANTE.
-                          </p>
-                          <p>
-                            De outro lado, como <strong>CONTRATADO</strong>, [Nome do Contratado], inscrito no CPF/CNPJ sob o nº [Número], doravante denominado simplesmente CONTRATADO.
-                          </p>
-                          <p className="pt-4">
-                            <strong className="text-foreground font-display">CLÁUSULA SEGUNDA – DO OBJETO</strong>
-                          </p>
-                          <p>
-                            O presente contrato tem como objeto a prestação de serviços de [Descrição do Serviço], conforme especificações acordadas entre as partes...
-                          </p>
-                          <div className="pt-8 text-center text-muted-foreground/50">
-                            [Continua...]
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Actions Sidebar */}
-                <div className="space-y-6">
-                  <div className="bg-card rounded-2xl border border-border/50 shadow-card p-6">
-                    <h3 className="font-display text-foreground mb-4">
-                      Seu contrato está pronto!
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-6 font-body">
-                      Revise o documento e faça o download em PDF.
-                    </p>
-                    <div className="space-y-3">
-                      <Button size="lg" className="w-full gap-2">
-                        <Download className="w-5 h-5" />
-                        Baixar PDF
-                      </Button>
-                      <Button variant="outline" size="lg" className="w-full" asChild>
-                        <Link to="/#planos">Ver Planos</Link>
-                      </Button>
-                    </div>
-                  </div>
-
-                  <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6">
-                    <p className="text-sm text-muted-foreground mb-2 font-body">
-                      Plano Gratuito
-                    </p>
-                    <p className="text-sm text-foreground font-display">
-                      <strong>2 de 3</strong> PDFs restantes este mês
-                    </p>
-                    <div className="mt-3 h-2 bg-background rounded-full overflow-hidden">
-                      <div className="h-full w-1/3 gradient-primary rounded-full" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
+              Próximo <ArrowRight className="h-4 w-4" />
+            </Button>
           )}
-        </div>
-      </main>
-      <Footer />
+        </CardFooter>
+      </Card>
     </div>
   );
-}
+};
+
+export default Generator;

@@ -1,14 +1,14 @@
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { 
-  ArrowRight, 
-  FileText, 
-  Zap, 
-  Target, 
-  BarChart3, 
-  Shield, 
-  Clock 
+import {
+  ArrowRight,
+  FileText,
+  Zap,
+  Target,
+  BarChart3,
+  Shield,
+  Clock
 } from "lucide-react";
 
 const features = [
@@ -20,15 +20,6 @@ const features = [
     href: "/gerador",
     color: "primary",
     image: "contract",
-  },
-  {
-    icon: Zap,
-    title: "Inteligência Artificial",
-    description: "Nossa IA analisa seu negócio e sugere as melhores cláusulas para seus contratos. Personalização inteligente em segundos.",
-    cta: "Conheça a IA GeraDoc",
-    href: "/ia",
-    color: "secondary",
-    image: "ai",
   },
   {
     icon: Target,
