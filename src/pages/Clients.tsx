@@ -187,7 +187,7 @@ const Clients = () => {
                                     <TableCell>{client.type}</TableCell>
                                     <TableCell>{client.phone}</TableCell>
                                     <TableCell className="text-right space-x-2">
-                                        <Button variant="ghost" size="icon" onClick={() => navigate(`/clientes/${client.id}`)} title="Ver Detalhes">
+                                        <Button variant="ghost" size="icon" onClick={() => navigate(`/app/clientes/${client.id}`)} title="Ver Detalhes">
                                             <Eye className="h-4 w-4" />
                                         </Button>
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(client)} title="Editar">

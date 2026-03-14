@@ -25,7 +25,7 @@ import {
 import { Button } from '@/components/ui/button';
 
 const adminNavItems = [
-    { title: 'Dashboard Comercial', url: '/admin', icon: LayoutDashboard },
+    { title: 'Início', url: '/admin', icon: LayoutDashboard },
     { title: 'Gestão de Usuários', url: '/admin/users', icon: Users },
     { title: 'Financeiro', url: '/admin/finance', icon: CreditCard },
     { title: 'Logs do Sistema', url: '/admin/logs', icon: Activity },
@@ -41,7 +41,7 @@ const AdminSidebar = () => {
             <SidebarHeader className="border-b px-4 py-4 bg-slate-900 text-white">
                 <div className="flex items-center gap-2 font-bold transition-all group-data-[collapsible=icon]:hidden">
                     <ShieldCheck className="h-6 w-6 text-primary-foreground" />
-                    <span className="text-xl tracking-tight">GeraDoc <span className="text-xs font-light opacity-70">Admin</span></span>
+                    <span className="text-xl tracking-tight">GeraDoc <span className="text-xs font-light opacity-70">Painel</span></span>
                 </div>
                 <div className="flex items-center justify-center font-bold group-data-[collapsible=icon]:flex hidden">
                     <ShieldCheck className="h-6 w-6" />
@@ -49,7 +49,7 @@ const AdminSidebar = () => {
             </SidebarHeader>
             <SidebarContent className="bg-slate-900 text-slate-300">
                 <SidebarGroup>
-                    <SidebarGroupLabel className="text-slate-500 uppercase text-[10px] font-bold tracking-widest">SaaS Control</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-slate-500 uppercase text-[10px] font-bold tracking-widest">Gerenciamento</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
                             {adminNavItems.map((item) => (

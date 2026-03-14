@@ -19,8 +19,10 @@ const Register = () => {
         setIsLoading(true);
         try {
             // Mock registration logic
-            await new Promise((resolve) => setTimeout(resolve, 1000));
-            toast.success('Conta criada com sucesso! Faça login para continuar.');
+            await new Promise((resolve) => setTimeout(resolve, 1500));
+            toast.success('Conta criada! Enviamos um e-mail de confirmação para você.', {
+                duration: 5000,
+            });
             navigate('/login');
         } catch (error) {
             toast.error('Erro ao criar conta. Tente novamente.');

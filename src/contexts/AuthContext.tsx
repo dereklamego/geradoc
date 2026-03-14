@@ -7,9 +7,12 @@ interface User {
     name: string;
     email: string;
     role: Role;
+    plan: 'free' | 'premium';
     company_name?: string;
     document?: string;
     phone?: string;
+    logoUrl?: string;
+    monthlyUsage: number;
 }
 
 interface AuthContextType {
@@ -17,6 +20,8 @@ interface AuthContextType {
     loading: boolean;
     login: (email: string, password: string) => Promise<void>;
     logout: () => void;
+    incrementUsage: () => void;
+    updateProfile: (data: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -42,6 +47,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Specific mock users for testing
         let mockUser: User;
+        const usageKey = `usage_${email}`;
+        const storedUsage = parseInt(localStorage.getItem(usageKey) || '0');
 
         if (email === 'admin@geradoc.com') {
             mockUser = {
@@ -49,7 +56,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 name: 'Super Admin',
                 email: email,
                 role: 'admin',
+                plan: 'premium',
                 company_name: 'GeraDoc Admin Inc',
+                monthlyUsage: storedUsage,
+            };
+        } else if (email === 'pro@geradoc.com') {
+            mockUser = {
+                id: 'pro-1',
+                name: 'Usuário Pro',
+                email: email,
+                role: 'user',
+                plan: 'premium',
+                company_name: 'Minha Empresa Premium',
+                monthlyUsage: storedUsage,
             };
         } else if (email === 'user@geradoc.com') {
             mockUser = {
@@ -57,7 +76,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 name: 'Usuário Padrão',
                 email: email,
                 role: 'user',
+                plan: 'free',
                 company_name: 'Minha Prestadora ME',
+                monthlyUsage: storedUsage,
             };
         } else {
             // Default fallback for any other email
@@ -66,7 +87,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 name: email.split('@')[0],
                 email: email,
                 role: 'user',
+                plan: 'free',
                 company_name: 'Nova Empresa',
+                monthlyUsage: storedUsage,
             };
         }
 
@@ -80,8 +103,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('geradoc_user');
     };
 
+    const incrementUsage = () => {
+        if (!user) return;
+        const newUsage = user.monthlyUsage + 1;
+        const updatedUser = { ...user, monthlyUsage: newUsage };
+        setUser(updatedUser);
+        localStorage.setItem('geradoc_user', JSON.stringify(updatedUser));
+        localStorage.setItem(`usage_${user.email}`, newUsage.toString());
+    };
+
+    const updateProfile = (data: Partial<User>) => {
+        if (!user) return;
+        const updatedUser = { ...user, ...data };
+        setUser(updatedUser);
+        localStorage.setItem('geradoc_user', JSON.stringify(updatedUser));
+    };
+
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout }}>
+        <AuthContext.Provider value={{ user, loading, login, logout, incrementUsage, updateProfile }}>
             {children}
         </AuthContext.Provider>
     );

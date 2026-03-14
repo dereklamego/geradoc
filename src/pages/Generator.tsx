@@ -13,8 +13,10 @@ import {
   ArrowRight,
   FileText,
   Save,
-  Download
+  Download,
+  Sparkles
 } from "lucide-react";
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Command,
   CommandEmpty,
@@ -53,7 +55,8 @@ const CATALOG = [
 ];
 
 const Generator = () => {
-  const { user } = useAuth();
+  const { user, incrementUsage } = useAuth();
+  const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedClient, setSelectedClient] = useState<typeof CLIENTS[0] | null>(null);
   const [docType, setDocType] = useState('Orçamento');
@@ -61,7 +64,15 @@ const Generator = () => {
   const [isClientPopoverOpen, setIsClientPopoverOpen] = useState(false);
 
   // Stepper logic
-  const nextStep = () => setStep((s) => Math.min(s + 1, 4));
+  const nextStep = () => {
+    if (step === 3 && user?.plan === 'free' && user.monthlyUsage >= 2) {
+      toast.error('Limite do plano gratuito atingido (2 documentos/mês). Faça upgrade para continuar!', {
+        duration: 5000,
+      });
+      return;
+    }
+    setStep((s) => Math.min(s + 1, 4));
+  };
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const totalValue = selectedServices.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
@@ -87,6 +98,12 @@ const Generator = () => {
   };
 
   const handleFinish = () => {
+    if (user?.plan === 'free' && user.monthlyUsage >= 2) {
+      toast.error('Limite atingido!');
+      return;
+    }
+
+    incrementUsage();
     toast.success('Documento salvo e registrado com sucesso!');
     // In a real app, here we would save to DB
     setStep(1);
@@ -113,6 +130,23 @@ const Generator = () => {
           </div>
         ))}
       </div>
+
+      {user?.plan === 'free' && (
+        <div className="mb-6 mx-4 p-4 bg-blue-50 border border-blue-100 rounded-xl flex items-center justify-between animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-3">
+            <div className="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-blue-900">Você está no Plano Gratuito</p>
+              <p className="text-xs text-blue-700">Você ainda pode criar <span className="font-bold">{Math.max(0, 2 - (user.monthlyUsage || 0))} documentos</span> este mês.</p>
+            </div>
+          </div>
+          <Button variant="outline" size="sm" className="bg-white border-blue-200 text-blue-600 hover:bg-blue-50 hover:text-blue-700 h-8 text-xs font-bold" onClick={() => navigate('/app/assinatura')}>
+            Escolher Plano
+          </Button>
+        </div>
+      )}
 
       <Card className="shadow-lg border-primary/5">
         <CardHeader>
@@ -267,11 +301,13 @@ const Generator = () => {
               <div className="bg-slate-100 rounded-lg flex-1 overflow-hidden border">
                 <PDFViewer width="100%" height="100%" showToolbar={false} className="border-none">
                   <DocumentPDF
+                    plan={user?.plan}
                     company={{
                       name: user?.company_name || 'Minha Empresa',
                       document: user?.document || '00.000.000/0001-00',
                       phone: user?.phone || '(11) 9999-9999',
-                      address: 'Rua Principal, 123 - Cidade/UF'
+                      address: 'Rua Principal, 123 - Cidade/UF',
+                      logoUrl: user?.logoUrl
                     }}
                     client={{
                       name: selectedClient?.name || 'Cliente Genérico',
@@ -290,11 +326,13 @@ const Generator = () => {
                 <PDFDownloadLink
                   document={
                     <DocumentPDF
+                      plan={user?.plan}
                       company={{
                         name: user?.company_name || 'Minha Empresa',
                         document: user?.document || '00.000.000/0001-00',
                         phone: user?.phone || '(11) 9999-9999',
-                        address: 'Rua Principal, 123 - Cidade/UF'
+                        address: 'Rua Principal, 123 - Cidade/UF',
+                        logoUrl: user?.logoUrl
                       }}
                       client={{
                         name: selectedClient?.name || 'Cliente Genérico',
@@ -313,7 +351,7 @@ const Generator = () => {
                 >
                   {({ loading }) => (
                     <Button variant="outline" className="w-full gap-2" disabled={loading}>
-                      <Download className="h-4 w-4" /> Download PDF
+                      <Download className="h-4 w-4" /> Baixar PDF
                     </Button>
                   )}
                 </PDFDownloadLink>

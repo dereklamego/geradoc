@@ -19,6 +19,8 @@ import Services from "./pages/Services";
 import Clients from "./pages/Clients";
 import ClientDetails from "./pages/ClientDetails";
 import Documents from "./pages/Documents";
+import Subscription from "./pages/Subscription";
+import Payment from "./pages/Payment";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 import GeradorFeature from "./pages/features/GeradorFeature";
@@ -61,6 +63,8 @@ const App = () => (
               <Route path="servicos" element={<Services />} />
               <Route path="documentos" element={<Documents />} />
               <Route path="perfil" element={<Profile />} />
+              <Route path="assinatura" element={<Subscription />} />
+              <Route path="pagamento" element={<Payment />} />
             </Route>
 
             {/* Admin Routes - Isolated */}

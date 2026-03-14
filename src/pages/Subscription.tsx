@@ -1,127 +1,106 @@
-import { Header } from "@/components/layout/Header";
-import { Footer } from "@/components/layout/Footer";
-import { Pricing } from "@/components/sections/Pricing";
-import { motion } from "framer-motion";
-import { Check, Zap } from "lucide-react";
-import logoGeradoc from "@/assets/logo-geradoc.png";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Check, Sparkles, Building2 } from "lucide-react";
+import { toast } from "sonner";
 
-const benefits = [
-  "Economize até 30% com planos anuais",
-  "Cancele quando quiser, sem multa",
-  "Suporte prioritário incluído",
-  "Acesso a novos modelos em primeira mão",
-];
+const Subscription = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
 
-export default function Subscription() {
+  const plans = [
+    {
+      name: "Gratuito",
+      description: "Para quem está começando",
+      price: "Grátis",
+      features: [
+        "2 documentos por mês",
+        "Marca d'água GeraDoc",
+        "Modelos básicos",
+      ],
+      current: user?.plan === 'free',
+      action: "Seu plano atual",
+      variant: "outline" as const,
+    },
+    {
+      name: "Profissional",
+      description: "Ideal para autônomos",
+      price: "R$ 29,90",
+      period: "/mês",
+      features: [
+        "30 documentos por mês",
+        "Sem marca d'água",
+        "Todos os modelos",
+        "Personalização de logo",
+      ],
+      popular: true,
+      current: user?.plan === 'premium',
+      action: user?.plan === 'premium' ? "Plano Ativo" : "Assinar agora",
+      variant: "default" as const,
+    }
+  ];
+
+  const handleSubscribe = (planName: string) => {
+    if (planName === 'Gratuito') return;
+    navigate('/app/pagamento');
+  };
+
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
-      <main className="pt-24 pb-20">
-        {/* Hero */}
-        <section className="py-12 md:py-20">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto text-center">
-              <motion.img
-                src={logoGeradoc}
-                alt="GeraDoc"
-                className="h-20 w-auto mx-auto mb-6"
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-              />
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/10 border border-secondary/20 text-sm font-medium font-display text-secondary mb-6"
-              >
-                <Zap className="w-4 h-4" />
-                Escolha seu plano
-              </motion.div>
-              <motion.h1
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="text-3xl md:text-4xl lg:text-5xl font-display text-foreground mb-6"
-              >
-                Invista na profissionalização do seu negócio
-              </motion.h1>
-              <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-                className="text-lg text-muted-foreground mb-8 font-body"
-              >
-                Contratos profissionais passam mais credibilidade e ajudam você a
-                fechar mais negócios. Escolha o plano que combina com você.
-              </motion.p>
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-                className="flex flex-wrap justify-center gap-4"
-              >
-                {benefits.map((benefit, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-2 text-sm text-muted-foreground font-body"
-                  >
-                    <div className="w-5 h-5 rounded-full bg-primary/10 flex items-center justify-center">
-                      <Check className="w-3 h-3 text-primary" />
-                    </div>
-                    {benefit}
-                  </div>
-                ))}
-              </motion.div>
-            </div>
-          </div>
-        </section>
+    <div className="space-y-8 animate-in fade-in duration-700">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Minha Assinatura</h2>
+        <p className="text-muted-foreground mt-1">Veja seu plano atual e as opções para crescer seu negócio.</p>
+      </div>
 
-        {/* Pricing Component */}
-        <Pricing />
-
-        {/* FAQ Preview */}
-        <section className="py-20 bg-card">
-          <div className="container mx-auto px-4">
-            <div className="max-w-3xl mx-auto">
-              <h2 className="text-2xl md:text-3xl font-display text-foreground text-center mb-12">
-                Perguntas Frequentes
-              </h2>
-              <div className="space-y-4">
-                {[
-                  {
-                    q: "Posso cancelar a qualquer momento?",
-                    a: "Sim! Você pode cancelar sua assinatura quando quiser, sem multa ou taxas adicionais. Seu acesso continua até o final do período pago.",
-                  },
-                  {
-                    q: "Os contratos são juridicamente válidos?",
-                    a: "Sim, todos os nossos modelos são elaborados seguindo as melhores práticas jurídicas e são válidos para uso profissional.",
-                  },
-                  {
-                    q: "Como funciona a marca d'água no plano gratuito?",
-                    a: "No plano gratuito, os PDFs gerados incluem uma pequena marca d'água discreta no rodapé do documento. Nos planos pagos, você recebe documentos limpos.",
-                  },
-                  {
-                    q: "Posso fazer upgrade ou downgrade do meu plano?",
-                    a: "Claro! Você pode alterar seu plano a qualquer momento. O valor será ajustado proporcionalmente.",
-                  },
-                ].map((faq, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                    className="bg-background rounded-2xl p-6 border border-border/50 shadow-sm"
-                  >
-                    <h3 className="font-display text-foreground mb-2">{faq.q}</h3>
-                    <p className="text-sm text-muted-foreground font-body">{faq.a}</p>
-                  </motion.div>
-                ))}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto py-4">
+        {plans.map((plan) => (
+          <Card
+            key={plan.name}
+            className={`relative border-2 transition-all duration-300 ${plan.popular ? "border-primary shadow-lg scale-105" : "border-slate-100"
+              } ${plan.current ? "bg-slate-50/50" : ""}`}
+          >
+            {plan.popular && (
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1 shadow-md">
+                <Sparkles className="h-3 w-3" /> Mais Escolhido
               </div>
-            </div>
-          </div>
-        </section>
-      </main>
-      <Footer />
+            )}
+
+            <CardHeader className="text-center pt-8">
+              <CardTitle className="text-2xl font-bold">{plan.name}</CardTitle>
+              <CardDescription className="text-sm mt-2">{plan.description}</CardDescription>
+              <div className="mt-4">
+                <span className="text-4xl font-bold">{plan.price}</span>
+                {plan.period && <span className="text-muted-foreground text-sm font-normal">{plan.period}</span>}
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-6">
+              <ul className="space-y-3">
+                {plan.features.map((feature) => (
+                  <li key={feature} className="flex items-center gap-3 text-sm text-slate-600">
+                    <div className="h-5 w-5 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0">
+                      <Check className="h-3 w-3 text-green-600" />
+                    </div>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+
+              <Button
+                onClick={() => handleSubscribe(plan.name)}
+                disabled={plan.current}
+                className={`w-full font-bold h-11 ${plan.popular ? "shadow-md hover:shadow-lg" : ""}`}
+                variant={plan.variant}
+              >
+                {plan.action}
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+export default Subscription;

@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 const menuItems = [
-    { title: "Dashboard", url: "/app", icon: LayoutDashboard },
+    { title: "Início", url: "/app", icon: LayoutDashboard },
     { title: "Gerador", url: "/app/gerador", icon: FileText },
     { title: "Documentos", url: "/app/documentos", icon: FileText },
     { title: "Clientes", url: "/app/clientes", icon: Users },
@@ -76,7 +76,7 @@ const AppSidebar = () => {
                                         tooltip="Admin"
                                     >
                                         <ShieldCheck />
-                                        <span>Admin</span>
+                                        <span>Painel Administrativo</span>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             )}

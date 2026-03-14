@@ -1,5 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { Progress } from '@/components/ui/progress';
+import { Sparkles } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,11 +14,15 @@ import {
     FilePlus,
     ArrowUpRight
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
-    const { user } = useAuth();
     const navigate = useNavigate();
+    const { user } = useAuth();
+
+    const usageCount = user?.monthlyUsage || 0;
+    const usageLimit = 2;
+    const remainingDocs = Math.max(0, usageLimit - usageCount);
+    const usagePercentage = Math.min(100, (usageCount / usageLimit) * 100);
 
     const quickActions = [
         { title: 'Novo Orçamento', icon: FilePlus, color: 'bg-blue-500', url: '/app/gerador' },
@@ -29,34 +36,55 @@ const Dashboard = () => {
     ];
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-700">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Bem-vindo, {user?.name?.split(' ')[0]}! 👋</h2>
-                    <p className="text-muted-foreground mt-1">Veja o resumo das suas atividades recentes.</p>
+                    <h2 className="text-3xl font-bold tracking-tight">Início</h2>
+                    <p className="text-muted-foreground mt-1">Oi! Veja como estão as coisas por aqui hoje.</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    {quickActions.map((action, i) => (
-                        <Button key={i} onClick={() => navigate(action.url)} className="gap-2 shadow-sm">
-                            <action.icon className="h-4 w-4" /> {action.title}
-                        </Button>
-                    ))}
-                </div>
+                {user?.plan === 'free' && (
+                    <Card className="border-blue-100 bg-blue-50/30 overflow-hidden min-w-[280px]">
+                        <CardContent className="p-4">
+                            <div className="flex justify-between items-start mb-2">
+                                <div className="flex items-center gap-2">
+                                    <Sparkles className="h-4 w-4 text-blue-500" />
+                                    <span className="text-sm font-semibold text-blue-900">Uso do Mês</span>
+                                </div>
+                                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">Gratuito</span>
+                            </div>
+                            <Progress value={usagePercentage} className="h-1.5 mb-2 bg-blue-100" />
+                            <div className="flex justify-between items-center text-xs">
+                                <span className="text-blue-700 font-medium">{usageCount} de {usageLimit} documentos</span>
+                                <Button variant="link" size="sm" className="h-auto p-0 text-blue-600 font-bold hover:text-blue-700" onClick={() => navigate('/app/assinatura')}>
+                                    Assinar Plano Pro
+                                </Button>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+                {quickActions.map((action, i) => (
+                    <Button key={i} onClick={() => navigate(action.url)} className="gap-2 shadow-sm">
+                        <action.icon className="h-4 w-4" /> {action.title}
+                    </Button>
+                ))}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Card className="border-none shadow-sm bg-blue-600 text-white">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium opacity-80 uppercase tracking-wider">Documentos do Mês</CardTitle>
+                        <CardTitle className="text-sm font-medium opacity-80 uppercase tracking-wider">Docs Gerados</CardTitle>
                     </CardHeader>
                     <CardContent>
                         <div className="text-4xl font-bold">24</div>
-                        <p className="text-xs mt-1 text-blue-100">+4 em relação ao mês anterior</p>
+                        <p className="text-xs mt-1 text-blue-100">+4 este mês</p>
                     </CardContent>
                 </Card>
                 <Card className="border-none shadow-sm">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Valor Gerado</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Faturamento</CardTitle>
                         <TrendingUp className="h-4 w-4 text-green-500" />
                     </CardHeader>
                     <CardContent>
@@ -66,7 +94,7 @@ const Dashboard = () => {
                 </Card>
                 <Card className="border-none shadow-sm">
                     <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Garantias Ativas</CardTitle>
+                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Garantias</CardTitle>
                         <AlertCircle className="h-4 w-4 text-blue-500" />
                     </CardHeader>
                     <CardContent>
@@ -76,11 +104,11 @@ const Dashboard = () => {
                 </Card>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
                 <Card className="border-none shadow-sm h-full">
                     <CardHeader>
-                        <CardTitle>Atividade Recente</CardTitle>
-                        <CardDescription>Últimos documentos gerados no sistema.</CardDescription>
+                        <CardTitle>Últimos Pedidos</CardTitle>
+                        <CardDescription>Mostrando o que foi gerado recentemente.</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {recentActivity.map((activity) => (
@@ -96,43 +124,15 @@ const Dashboard = () => {
                                 </div>
                                 <div className="text-right">
                                     <p className="text-sm font-bold text-primary">{activity.value}</p>
-                                    <Button variant="link" size="sm" className="h-auto p-0 text-xs">Ver mais</Button>
+                                    <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => navigate('/app/documentos')}>Ver</Button>
                                 </div>
                             </div>
                         ))}
-                        <Button variant="outline" className="w-full mt-2" onClick={() => navigate('/app/documentos')}>Ver todos os documentos</Button>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-none shadow-sm bg-gradient-to-br from-slate-900 to-slate-800 text-white overflow-hidden relative">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <TrendingUp className="h-5 w-5 text-blue-400" /> Insights do Negócio
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="p-4 bg-white/10 rounded-xl backdrop-blur-sm border border-white/10">
-                            <h4 className="font-bold text-lg mb-2 flex items-center gap-2">
-                                Dica do Dia <TrendingUp className="h-4 w-4" />
-                            </h4>
-                            <p className="text-sm opacity-90 leading-relaxed">
-                                Você teve um aumento de 15% na geração de Orçamentos esta semana. Que tal enviar um lembrete para os clientes que ainda não aprovaram?
-                            </p>
-                        </div>
-
-                        <div className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/5 group hover:bg-white/10 transition-all cursor-pointer">
-                            <div className="flex items-center gap-3">
-                                <Users className="h-5 w-5 text-blue-400" />
-                                <span>Base de Clientes cresceu 5%</span>
-                            </div>
-                            <ArrowUpRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        </div>
-
-                        <div className="absolute -bottom-6 -right-6 h-32 w-32 bg-primary/20 blur-3xl rounded-full" />
+                        <Button variant="outline" className="w-full mt-2" onClick={() => navigate('/app/documentos')}>Ver todos</Button>
                     </CardContent>
                 </Card>
             </div>
-        </div>
+        </div >
     );
 };
 

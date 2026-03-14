@@ -1,5 +1,5 @@
 import React from 'react';
-import { Page, Text, View, Document, StyleSheet, Font } from '@react-pdf/renderer';
+import { Page, Text, View, Document, StyleSheet, Font, Image } from '@react-pdf/renderer';
 
 // Register fonts if needed, or use defaults
 const styles = StyleSheet.create({
@@ -110,6 +110,7 @@ interface DocumentPDFProps {
         document: string;
         phone: string;
         address: string;
+        logoUrl?: string; // Added logoUrl
     };
     client: {
         name: string;
@@ -125,23 +126,46 @@ interface DocumentPDFProps {
     }>;
     total: number;
     date: string;
+    plan?: 'free' | 'premium'; // Added plan
 }
 
-const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, services, total, date }) => (
+const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, services, total, date, plan }) => (
     <Document>
         <Page size="A4" style={styles.page}>
+            {/* Watermark for Free Plan */}
+            {plan === 'free' && (
+                <View style={{
+                    position: 'absolute',
+                    top: '40%',
+                    left: '10%',
+                    transform: 'rotate(-45deg)',
+                    opacity: 0.1,
+                    zIndex: -1,
+                }}>
+                    <Text style={{ fontSize: 60, fontWeight: 'bold', color: '#000' }}>GERADOC FREE</Text>
+                </View>
+            )}
+
             {/* Header */}
             <View style={styles.header}>
-                <View style={styles.companyInfo}>
-                    <Text style={styles.companyName}>{company.name || 'Sua Empresa'}</Text>
-                    <Text>{company.document}</Text>
-                    <Text>{company.phone}</Text>
-                    <Text>{company.address}</Text>
+                <View style={{ flexDirection: 'row', gap: 10 }}>
+                    {company.logoUrl && plan === 'premium' && (
+                        <View style={{ width: 60, height: 60, overflow: 'hidden' }}>
+                            <Image src={company.logoUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        </View>
+                    )}
+                    <View style={styles.companyInfo}>
+                        <Text style={styles.companyName}>{company.name || 'Sua Empresa'}</Text>
+                        <Text>{company.document}</Text>
+                        <Text>{company.phone}</Text>
+                        <Text>{company.address}</Text>
+                    </View>
                 </View>
                 <View>
                     <Text style={styles.docTitle}>{docType}</Text>
                     <Text style={{ textAlign: 'right' }}>Nº {Math.floor(Math.random() * 10000)}</Text>
                     <Text style={{ textAlign: 'right' }}>Data: {date}</Text>
+                    {plan === 'free' && <Text style={{ textAlign: 'right', fontSize: 7, color: '#999', marginTop: 2 }}>Versão Gratuita</Text>}
                 </View>
             </View>
 
