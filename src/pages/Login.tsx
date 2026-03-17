@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuthActions, useIsAuthLoading } from '@/store/useAppStore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,8 +11,8 @@ import { toast } from 'sonner';
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-    const { login } = useAuth();
+    const { login } = useAuthActions();
+    const isLoading = useIsAuthLoading();
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -20,9 +20,8 @@ const Login = () => {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         try {
-            await login(email, password);
+            await login(email);
             toast.success('Bem-vindo ao GeraDoc!');
 
             if (email === 'admin@geradoc.com') {
@@ -32,8 +31,6 @@ const Login = () => {
             }
         } catch (error) {
             toast.error('Erro ao fazer login. Tente novamente.');
-        } finally {
-            setIsLoading(false);
         }
     };
 

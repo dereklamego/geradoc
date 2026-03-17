@@ -1,0 +1,98 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users and Authentication
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  passwordHash  String
+  name          String
+  role          Role       @default(USER)
+  plan          Plan       @default(FREE)
+  
+  // Stripe Integration
+  stripeCustomerId     String?  @unique
+  stripeSubscriptionId String?  @unique
+  subscription         Subscription?
+
+  documents     Document[]
+  folders       Folder[]
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+}
+
+model Subscription {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  status             String   // active, trialing, past_due, canceled
+  priceId            String   // ID do preço no Stripe
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// Documents and Content
+model Document {
+  id          String   @id @default(uuid())
+  title       String
+  content     Json     // Flexible JSON structure for Rich Text / Dynamic Data
+  status      Status   @default(DRAFT)
+  version     Int      @default(1)
+  isDeleted   Boolean  @default(false) // Soft Delete
+  
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id])
+
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+enum Role {
+  USER
+  ADMIN
+  BETA
+}
+
+enum Plan {
+  FREE
+  PREMIUM
+}
+
+enum Status {
+  DRAFT
+  PENDING
+  APPROVED
+  FINISHED
+}
+
+// Organization and Templates
+model Folder {
+  id        String     @id @default(uuid())
+  name      String
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  documents Document[]
+}
+
+model Template {
+  id          String     @id @default(uuid())
+  name        String
+  description String
+  structure   Json       // Pre-defined JSON structure
+  category    String
+  documents   Document[]
+}

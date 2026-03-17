@@ -8,11 +8,11 @@ import { CTA } from "@/components/sections/CTA";
 import { Testimonials } from "@/components/sections/Testimonials";
 import { Statistics } from "@/components/sections/Statistics";
 import { useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/store/useAppStore";
 import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user } = useAuth();
+  const user = useUser();
   const navigate = useNavigate();
 
   useEffect(() => {

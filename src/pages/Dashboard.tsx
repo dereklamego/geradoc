@@ -1,27 +1,29 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUser } from '@/store/useAppStore';
 import { Progress } from '@/components/ui/progress';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
     Plus,
-    Users,
     FileText,
     TrendingUp,
     AlertCircle,
     FilePlus,
-    ArrowUpRight
 } from 'lucide-react';
+import { useClients, useDocuments, useProfile } from '@/hooks/use-api';
 
 const Dashboard = () => {
     const navigate = useNavigate();
-    const { user } = useAuth();
+    const authUser = useUser();
+    const { data: clients = [], isLoading: isLoadingClients } = useClients();
+    const { data: documents = [], isLoading: isLoadingDocs } = useDocuments();
+    const { data: profile } = useProfile();
 
+    const user = profile || authUser;
     const usageCount = user?.monthlyUsage || 0;
     const usageLimit = 2;
-    const remainingDocs = Math.max(0, usageLimit - usageCount);
     const usagePercentage = Math.min(100, (usageCount / usageLimit) * 100);
 
     const quickActions = [
@@ -29,11 +31,15 @@ const Dashboard = () => {
         { title: 'Cadastrar Cliente', icon: Plus, color: 'bg-green-500', url: '/app/clientes' },
     ];
 
-    const recentActivity = [
-        { id: 1, type: 'Orçamento', client: 'Carlos Oliveira', value: 'R$ 150,00', date: 'Há 2 horas' },
-        { id: 2, type: 'OS', client: 'Logística Express', value: 'R$ 800,00', date: 'Há 5 horas' },
-        { id: 3, type: 'Recibo', client: 'Maria Silva', value: 'R$ 50,00', date: 'Ontem' },
-    ];
+    const recentActivity = documents.slice(0, 5).map(doc => ({
+        id: doc.id,
+        type: doc.type,
+        client: doc.clientName,
+        value: `R$ ${doc.value.toFixed(2)}`,
+        date: new Date(doc.date).toLocaleDateString('pt-BR')
+    }));
+
+    const totalFaturamento = documents.reduce((acc, doc) => acc + doc.value, 0);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -72,66 +78,76 @@ const Dashboard = () => {
                 ))}
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="border-none shadow-sm bg-blue-600 text-white">
-                    <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium opacity-80 uppercase tracking-wider">Docs Gerados</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-4xl font-bold">24</div>
-                        <p className="text-xs mt-1 text-blue-100">+4 este mês</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-none shadow-sm">
-                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Faturamento</CardTitle>
-                        <TrendingUp className="h-4 w-4 text-green-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">R$ 5.420,00</div>
-                        <p className="text-xs mt-1 text-green-600 font-medium">+12.5% faturamento</p>
-                    </CardContent>
-                </Card>
-                <Card className="border-none shadow-sm">
-                    <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Garantias</CardTitle>
-                        <AlertCircle className="h-4 w-4 text-blue-500" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">12</div>
-                        <p className="text-xs mt-1 text-muted-foreground">Clientes protegidos</p>
-                    </CardContent>
-                </Card>
-            </div>
+            {(isLoadingClients || isLoadingDocs) ? (
+                <div className="flex items-center justify-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <Card className="border-none shadow-sm bg-blue-600 text-white">
+                            <CardHeader className="pb-2">
+                                <CardTitle className="text-sm font-medium opacity-80 uppercase tracking-wider">Docs Gerados</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-4xl font-bold">{documents.length}</div>
+                                <p className="text-xs mt-1 text-blue-100">Total histórico</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-none shadow-sm">
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Faturamento</CardTitle>
+                                <TrendingUp className="h-4 w-4 text-green-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">R$ {totalFaturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                                <p className="text-xs mt-1 text-green-600 font-medium">Soma de todos os docs</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="border-none shadow-sm">
+                            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+                                <CardTitle className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Clientes</CardTitle>
+                                <AlertCircle className="h-4 w-4 text-blue-500" />
+                            </CardHeader>
+                            <CardContent>
+                                <div className="text-3xl font-bold">{clients.length}</div>
+                                <p className="text-xs mt-1 text-muted-foreground">Base de clientes</p>
+                            </CardContent>
+                        </Card>
+                    </div>
 
-            <div className="grid grid-cols-1 gap-6">
-                <Card className="border-none shadow-sm h-full">
-                    <CardHeader>
-                        <CardTitle>Últimos Pedidos</CardTitle>
-                        <CardDescription>Mostrando o que foi gerado recentemente.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {recentActivity.map((activity) => (
-                            <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
-                                <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-slate-100 rounded-md">
-                                        <FileText className="h-5 w-5 text-primary" />
+                    <div className="grid grid-cols-1 gap-6">
+                        <Card className="border-none shadow-sm h-full">
+                            <CardHeader>
+                                <CardTitle>Últimos Pedidos</CardTitle>
+                                <CardDescription>Mostrando o que foi gerado recentemente.</CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {recentActivity.length > 0 ? recentActivity.map((activity) => (
+                                    <div key={activity.id} className="flex items-center justify-between p-3 rounded-lg border border-slate-100 hover:bg-slate-50 transition-colors">
+                                        <div className="flex items-center gap-3">
+                                            <div className="p-2 bg-slate-100 rounded-md">
+                                                <FileText className="h-5 w-5 text-primary" />
+                                            </div>
+                                            <div>
+                                                <p className="font-semibold text-sm">{activity.type} - {activity.client}</p>
+                                                <p className="text-xs text-muted-foreground">{activity.date}</p>
+                                            </div>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className="text-sm font-bold text-primary">{activity.value}</p>
+                                            <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => navigate('/app/documentos')}>Ver</Button>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <p className="font-semibold text-sm">{activity.type} - {activity.client}</p>
-                                        <p className="text-xs text-muted-foreground">{activity.date}</p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <p className="text-sm font-bold text-primary">{activity.value}</p>
-                                    <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => navigate('/app/documentos')}>Ver</Button>
-                                </div>
-                            </div>
-                        ))}
-                        <Button variant="outline" className="w-full mt-2" onClick={() => navigate('/app/documentos')}>Ver todos</Button>
-                    </CardContent>
-                </Card>
-            </div>
+                                )) : (
+                                    <p className="text-center text-muted-foreground py-4">Nenhuma atividade recente.</p>
+                                )}
+                                <Button variant="outline" className="w-full mt-2" onClick={() => navigate('/app/documentos')}>Ver todos</Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </>
+            )}
         </div >
     );
 };

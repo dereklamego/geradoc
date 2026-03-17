@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUser, useAuthActions } from '@/store/useAppStore';
 import {
     Sidebar,
     SidebarContent,
@@ -22,7 +22,8 @@ import {
     User,
     ShieldCheck,
     Package,
-    Box, // Added Box icon
+    Box,
+    CreditCard,
 } from 'lucide-react';
 
 const menuItems = [
@@ -31,13 +32,15 @@ const menuItems = [
     { title: "Documentos", url: "/app/documentos", icon: FileText },
     { title: "Clientes", url: "/app/clientes", icon: Users },
     { title: "Catálogo", url: "/app/servicos", icon: Box },
+    { title: "Minha Assinatura", url: "/app/assinatura", icon: CreditCard },
     { title: 'Perfil', url: '/app/perfil', icon: User },
 ];
 
 const AppSidebar = () => {
-    const { user, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const user = useUser();
+    const { logout } = useAuthActions();
 
     return (
         <Sidebar variant="sidebar" collapsible="icon">

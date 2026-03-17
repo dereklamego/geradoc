@@ -1,16 +1,16 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
     FileText,
     Search,
     Filter,
-    Download,
     Eye,
     MoreHorizontal,
     FileDown,
-    Printer
+    Printer,
+    Loader2
 } from 'lucide-react';
 import {
     Table,
@@ -36,26 +36,20 @@ import {
 } from "@/components/ui/dialog";
 import { PDFViewer } from '@react-pdf/renderer';
 import DocumentPDF from '@/components/documents/DocumentPDF';
-import { useAuth } from '@/contexts/AuthContext';
-
-const MOCK_DOCUMENTS = [
-    { id: 'DOC-001', type: 'Orçamento', client: 'Carlos Oliveira', value: 150.00, date: '2026-03-05', clientData: { name: 'Carlos Oliveira', document: '123.456.789-00', phone: '(11) 98888-7777', address: 'Rua das Flores, 10' } },
-    { id: 'DOC-002', type: 'Ordem de Serviço', client: 'Logística Express', value: 800.00, date: '2026-03-05', clientData: { name: 'Logística Express Ltda', document: '12.345.678/0001-90', phone: '(11) 3333-4444', address: 'Av. Paulista, 1000' } },
-    { id: 'DOC-003', type: 'Recibo', client: 'Maria Silva', value: 50.00, date: '2026-03-04', clientData: { name: 'Maria Silva', document: '987.654.321-11', phone: '(11) 97777-6666', address: 'Rua das Palmeiras, 50' } },
-    { id: 'DOC-004', type: 'Orçamento', client: 'Condomínio Solar', value: 1200.00, date: '2026-03-03', clientData: { name: 'Condomínio Solar', document: '11.222.333/0001-44', phone: '(11) 2222-1111', address: 'Rua do Sol, 500' } },
-    { id: 'DOC-005', type: 'Ordem de Serviço', client: 'Padaria Central', value: 250.00, date: '2026-03-02', clientData: { name: 'Padaria Central', document: '55.666.777/0001-88', phone: '(11) 4444-5555', address: 'Av. Central, 10' } },
-    { id: 'DOC-006', type: 'Recibo', client: 'João Souza', value: 120.00, date: '2026-03-01', clientData: { name: 'João Souza', document: '111.222.333-44', phone: '(11) 91111-2222', address: 'Rua dos Pinheiros, 100' } },
-];
+import { useUser } from '@/store/useAppStore';
+import { useDocuments } from '@/hooks/use-api';
+import { IDocument } from '@/types';
 
 const Documents = () => {
-    const { user } = useAuth();
+    const user = useUser();
+    const { data: documents = [], isLoading } = useDocuments();
     const [searchTerm, setSearchTerm] = useState('');
-    const [viewingDoc, setViewingDoc] = useState<typeof MOCK_DOCUMENTS[0] | null>(null);
+    const [viewingDoc, setViewingDoc] = useState<IDocument | null>(null);
 
-    const filteredDocs = MOCK_DOCUMENTS.filter(doc =>
-        doc.client.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const filteredDocs = documents.filter(doc =>
         doc.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        doc.type.toLowerCase().includes(searchTerm.toLowerCase())
+        doc.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        doc.clientName.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -103,45 +97,52 @@ const Documents = () => {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredDocs.map((doc) => (
-                                    <TableRow key={doc.id}>
-                                        <TableCell className="font-medium">{doc.id}</TableCell>
-                                        <TableCell>{doc.client}</TableCell>
-                                        <TableCell>
-                                            <div className="flex items-center gap-2">
-                                                <FileText className="h-4 w-4 text-primary" />
-                                                {doc.type}
-                                            </div>
-                                        </TableCell>
-                                        <TableCell>{new Date(doc.date).toLocaleDateString('pt-BR')}</TableCell>
-                                        <TableCell>R$ {doc.value.toFixed(2)}</TableCell>
-                                        <TableCell className="text-right">
-                                            <DropdownMenu>
-                                                <DropdownMenuTrigger asChild>
-                                                    <Button variant="ghost" className="h-8 w-8 p-0">
-                                                        <MoreHorizontal className="h-4 w-4" />
-                                                    </Button>
-                                                </DropdownMenuTrigger>
-                                                <DropdownMenuContent align="end">
-                                                    <DropdownMenuLabel>Ações</DropdownMenuLabel>
-                                                    <DropdownMenuItem className="gap-2" onClick={() => setViewingDoc(doc)}>
-                                                        <Eye className="h-4 w-4" /> Visualizar
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuItem className="gap-2">
-                                                        <Printer className="h-4 w-4" /> Imprimir
-                                                    </DropdownMenuItem>
-                                                    <DropdownMenuSeparator />
-                                                    <DropdownMenuItem className="gap-2 text-red-600">
-                                                        Excluir
-                                                    </DropdownMenuItem>
-                                                </DropdownMenuContent>
-                                            </DropdownMenu>
+                                {isLoading ? (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center">
+                                            <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                                {filteredDocs.length === 0 && (
+                                ) : filteredDocs.length > 0 ? (
+                                    filteredDocs.map((doc) => (
+                                        <TableRow key={doc.id}>
+                                            <TableCell className="font-medium">{doc.id}</TableCell>
+                                            <TableCell>{doc.clientName}</TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <FileText className="h-4 w-4 text-primary" />
+                                                    {doc.type}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>{new Date(doc.date).toLocaleDateString('pt-BR')}</TableCell>
+                                            <TableCell>R$ {doc.value.toFixed(2)}</TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger asChild>
+                                                        <Button variant="ghost" className="h-8 w-8 p-0">
+                                                            <MoreHorizontal className="h-4 w-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuLabel>Ações</DropdownMenuLabel>
+                                                        <DropdownMenuItem className="gap-2" onClick={() => setViewingDoc(doc)}>
+                                                            <Eye className="h-4 w-4" /> Visualizar
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuItem className="gap-2">
+                                                            <Printer className="h-4 w-4" /> Imprimir
+                                                        </DropdownMenuItem>
+                                                        <DropdownMenuSeparator />
+                                                        <DropdownMenuItem className="gap-2 text-red-600">
+                                                            Excluir
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
                                     <TableRow>
-                                        <TableCell colSpan={7} className="h-24 text-center">
+                                        <TableCell colSpan={6} className="h-24 text-center">
                                             Nenhum documento encontrado.
                                         </TableCell>
                                     </TableRow>
@@ -162,14 +163,17 @@ const Documents = () => {
                             <PDFViewer width="100%" height="100%" showToolbar={true} className="rounded-lg border shadow-sm">
                                 <DocumentPDF
                                     docType={viewingDoc.type}
-                                    client={viewingDoc.clientData}
+                                    client={viewingDoc.clientDataSnapshot}
                                     company={{
                                         name: user.company_name || 'Minha Empresa',
                                         document: user.document || '00.000.000/0001-00',
                                         phone: user.phone || '(11) 9999-9999',
-                                        address: 'Rua Principal, 123'
+                                        address: user.address || 'Rua Principal, 123',
+                                        logoUrl: user.logoUrl
                                     }}
-                                    services={[{ name: viewingDoc.type, price: viewingDoc.value }]}
+                                    plan={user.plan}
+                                    primaryColor={user.brandColor}
+                                    services={viewingDoc.items.map(item => ({ name: item.name, price: item.price }))}
                                     total={viewingDoc.value}
                                     date={new Date(viewingDoc.date).toLocaleDateString('pt-BR')}
                                 />

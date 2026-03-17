@@ -22,44 +22,41 @@ import { Button } from '@/components/ui/button';
 import { Plus, Pencil, Trash2, Search } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-
-interface Service {
-    id: string;
-    name: string;
-    default_price: number;
-    default_warranty_months: number;
-}
+import { useServices, useCreateService, useUpdateService, useDeleteService } from '@/hooks/use-api';
+import { IService } from '@/types';
 
 const Services = () => {
-    const [services, setServices] = useState<Service[]>([
-        { id: '1', name: 'Manutenção Preventiva AC', default_price: 150, default_warranty_months: 3 },
-        { id: '2', name: 'Carga de Gás R410A', default_price: 350, default_warranty_months: 6 },
-        { id: '3', name: 'Instalação Split 9000 BTUs', default_price: 600, default_warranty_months: 12 },
-    ]);
+    const { data: services = [], isLoading } = useServices();
+    const createService = useCreateService();
+    const updateService = useUpdateService();
+    const deleteService = useDeleteService();
+
     const [searchTerm, setSearchTerm] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingService, setEditingService] = useState<Service | null>(null);
+    const [editingService, setEditingService] = useState<IService | null>(null);
 
-    const { register, handleSubmit, reset, setValue } = useForm<Service>();
+    const { register, handleSubmit, reset, setValue } = useForm<IService>();
 
     const filteredServices = services.filter((s) =>
         s.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const onSubmit = (data: Service) => {
-        if (editingService) {
-            setServices((prev) =>
-                prev.map((s) => (s.id === editingService.id ? { ...data, id: s.id } : s))
-            );
-            toast.success('Serviço atualizado!');
-        } else {
-            setServices((prev) => [...prev, { ...data, id: Math.random().toString(36).substr(2, 9) }]);
-            toast.success('Serviço cadastrado!');
+    const onSubmit = async (data: IService) => {
+        try {
+            if (editingService) {
+                await updateService.mutateAsync({ ...data, id: editingService.id });
+                toast.success('Serviço atualizado!');
+            } else {
+                await createService.mutateAsync(data);
+                toast.success('Serviço cadastrado!');
+            }
+            closeDialog();
+        } catch (error) {
+            toast.error('Erro ao salvar serviço');
         }
-        closeDialog();
     };
 
-    const handleEdit = (service: Service) => {
+    const handleEdit = (service: IService) => {
         setEditingService(service);
         setValue('name', service.name);
         setValue('default_price', service.default_price);
@@ -67,10 +64,14 @@ const Services = () => {
         setIsDialogOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('Tem certeza que deseja excluir este serviço?')) {
-            setServices((prev) => prev.filter((s) => s.id !== id));
-            toast.success('Serviço removido.');
+            try {
+                await deleteService.mutateAsync(id);
+                toast.success('Serviço removido.');
+            } catch (error) {
+                toast.error('Erro ao excluir serviço');
+            }
         }
     };
 

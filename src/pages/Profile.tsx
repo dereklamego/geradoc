@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUser, useAuthActions } from '@/store/useAppStore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 const Profile = () => {
-    const { user, updateProfile } = useAuth();
+    const user = useUser();
+    const { updateProfile } = useAuthActions();
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         name: user?.name || '',
@@ -18,7 +19,8 @@ const Profile = () => {
         company_name: user?.company_name || '',
         document: user?.document || '',
         phone: user?.phone || '',
-        address: '',
+        address: user?.address || '',
+        brandColor: user?.brandColor || '#2563eb',
     });
     const [logoPreview, setLogoPreview] = useState<string | null>(user?.logoUrl || null);
     const [isLoading, setIsLoading] = useState(false);
@@ -143,6 +145,34 @@ const Profile = () => {
                                             value={formData.address}
                                             onChange={handleChange}
                                         />
+                                    </div>
+                                    <div className="space-y-3 p-4 bg-slate-50 rounded-xl border border-slate-200">
+                                        <div className="flex items-center justify-between">
+                                            <Label htmlFor="brandColor" className="font-bold">Cor da Marca</Label>
+                                            <div
+                                                className="w-8 h-8 rounded-full border shadow-sm"
+                                                style={{ backgroundColor: formData.brandColor }}
+                                            />
+                                        </div>
+                                        <div className="flex gap-3 items-center">
+                                            <Input
+                                                id="brandColor"
+                                                type="color"
+                                                className="w-16 h-10 p-1 cursor-pointer"
+                                                value={formData.brandColor}
+                                                onChange={handleChange}
+                                            />
+                                            <Input
+                                                id="brandColorHex"
+                                                type="text"
+                                                className="flex-1 font-mono uppercase"
+                                                value={formData.brandColor}
+                                                onChange={(e) => setFormData(prev => ({ ...prev, brandColor: e.target.value }))}
+                                            />
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground italic">
+                                            Esta cor será usada nos títulos e destaques dos seus PDFs.
+                                        </p>
                                     </div>
                                 </div>
                             </CardContent>

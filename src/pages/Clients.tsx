@@ -27,30 +27,24 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Plus, Pencil, Trash2, Search, Eye, UserPlus } from 'lucide-react';
+import { Pencil, Trash2, Search, Eye, UserPlus, Loader2 } from 'lucide-react';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
-
-interface Client {
-    id: string;
-    name: string;
-    type: 'PF' | 'PJ';
-    document: string;
-    phone: string;
-    address: string;
-}
+import { useClients, useCreateClient, useUpdateClient, useDeleteClient } from '@/hooks/use-api';
+import { IClient } from '@/types';
 
 const Clients = () => {
-    const [clients, setClients] = useState<Client[]>([
-        { id: '1', name: 'Carlos Oliveira', type: 'PF', document: '123.456.789-00', phone: '(11) 98888-7777', address: 'Rua das Flores, 10' },
-        { id: '2', name: 'Logística Express Ltda', type: 'PJ', document: '12.345.678/0001-90', phone: '(11) 3333-4444', address: 'Av. Paulista, 1000' },
-    ]);
+    const { data: clients = [], isLoading } = useClients();
+    const createClient = useCreateClient();
+    const updateClient = useUpdateClient();
+    const deleteClient = useDeleteClient();
+
     const [searchTerm, setSearchTerm] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [editingClient, setEditingClient] = useState<Client | null>(null);
+    const [editingClient, setEditingClient] = useState<IClient | null>(null);
 
     const navigate = useNavigate();
-    const { register, handleSubmit, reset, setValue, control } = useForm<Client>({
+    const { register, handleSubmit, reset, setValue, control } = useForm<Omit<IClient, 'id'>>({
         defaultValues: {
             type: 'PF'
         }
@@ -60,20 +54,22 @@ const Clients = () => {
         c.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    const onSubmit = (data: Client) => {
-        if (editingClient) {
-            setClients((prev) =>
-                prev.map((c) => (c.id === editingClient.id ? { ...data, id: c.id } : c))
-            );
-            toast.success('Cliente atualizado!');
-        } else {
-            setClients((prev) => [...prev, { ...data, id: Math.random().toString(36).substr(2, 9) }]);
-            toast.success('Cliente cadastrado!');
+    const onSubmit = async (data: Omit<IClient, 'id'>) => {
+        try {
+            if (editingClient) {
+                await updateClient.mutateAsync({ ...data, id: editingClient.id });
+                toast.success('Cliente atualizado!');
+            } else {
+                await createClient.mutateAsync(data);
+                toast.success('Cliente cadastrado!');
+            }
+            closeDialog();
+        } catch (error) {
+            toast.error('Erro ao salvar cliente');
         }
-        closeDialog();
     };
 
-    const handleEdit = (client: Client) => {
+    const handleEdit = (client: IClient) => {
         setEditingClient(client);
         setValue('name', client.name);
         setValue('type', client.type);
@@ -83,10 +79,14 @@ const Clients = () => {
         setIsDialogOpen(true);
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = async (id: string) => {
         if (confirm('Tem certeza que deseja excluir este cliente?')) {
-            setClients((prev) => prev.filter((c) => c.id !== id));
-            toast.success('Cliente removido.');
+            try {
+                await deleteClient.mutateAsync(id);
+                toast.success('Cliente removido.');
+            } catch (error) {
+                toast.error('Erro ao excluir cliente');
+            }
         }
     };
 
@@ -133,7 +133,7 @@ const Clients = () => {
                                         control={control}
                                         name="type"
                                         render={({ field }) => (
-                                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <Select onValueChange={field.onChange} value={field.value}>
                                                 <SelectTrigger>
                                                     <SelectValue placeholder="Selecione o tipo" />
                                                 </SelectTrigger>
@@ -162,7 +162,10 @@ const Clients = () => {
                                 <Button type="button" variant="outline" onClick={closeDialog}>
                                     Cancelar
                                 </Button>
-                                <Button type="submit">Salvar</Button>
+                                <Button type="submit" disabled={createClient.isPending || updateClient.isPending}>
+                                    {(createClient.isPending || updateClient.isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                                    Salvar
+                                </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
@@ -180,7 +183,13 @@ const Clients = () => {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {filteredClients.length > 0 ? (
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={4} className="h-24 text-center">
+                                    <Loader2 className="mx-auto h-6 w-6 animate-spin text-primary" />
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredClients.length > 0 ? (
                             filteredClients.map((client) => (
                                 <TableRow key={client.id}>
                                     <TableCell className="font-medium">{client.name}</TableCell>
@@ -193,7 +202,7 @@ const Clients = () => {
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(client)} title="Editar">
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(client.id)} title="Excluir">
+                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(client.id)} title="Excluir" disabled={deleteClient.isPending}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>

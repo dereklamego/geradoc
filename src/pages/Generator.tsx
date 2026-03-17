@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { useUser, useAuthActions } from '@/store/useAppStore';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,9 +15,9 @@ import {
   FileText,
   Save,
   Download,
-  Sparkles
+  Sparkles,
+  Loader2
 } from "lucide-react";
-import { useNavigate, Link } from 'react-router-dom';
 import {
   Command,
   CommandEmpty,
@@ -30,60 +31,43 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { cn } from "@/lib/utils";
 import { toast } from 'sonner';
 import { PDFViewer, PDFDownloadLink } from '@react-pdf/renderer';
 import DocumentPDF from '@/components/documents/DocumentPDF';
-
-// Mock data constants
-const CLIENTS = [
-  { id: '1', name: 'Carlos Oliveira', document: '123.456.789-00', phone: '(11) 98888-7777', address: 'Rua das Flores, 10' },
-  { id: '2', name: 'Logística Express Ltda', document: '12.345.678/0001-90', phone: '(11) 3333-4444', address: 'Av. Paulista, 1000' },
-];
-
-const CATALOG = [
-  { id: 's1', name: 'Manutenção Preventiva AC', price: 150 },
-  { id: 's2', name: 'Carga de Gás R410A', price: 350 },
-  { id: 's3', name: 'Instalação Split 9000 BTUs', price: 600 },
-];
+import { useClients, useCreateDocument, useServices } from '@/hooks/use-api';
+import { IClient, IServiceItem, IService } from '@/types';
 
 const Generator = () => {
-  const { user, incrementUsage } = useAuth();
   const navigate = useNavigate();
+  const user = useUser();
+  const { incrementUsage } = useAuthActions();
+
+  const { data: clients = [], isLoading: isLoadingClients } = useClients();
+  const { data: catalog = [], isLoading: isLoadingCatalog } = useServices();
+  const createDocument = useCreateDocument();
+
   const [step, setStep] = useState(1);
-  const [selectedClient, setSelectedClient] = useState<typeof CLIENTS[0] | null>(null);
-  const [docType, setDocType] = useState('Orçamento');
-  const [selectedServices, setSelectedServices] = useState<Array<{ id: string; name: string; price: number; quantity: number }>>([]);
+  const [selectedClient, setSelectedClient] = useState<IClient | null>(null);
+  const [docType, setDocType] = useState<'Orçamento' | 'OS' | 'Recibo'>('Orçamento');
+  const [selectedServices, setSelectedServices] = useState<IServiceItem[]>([]);
   const [isClientPopoverOpen, setIsClientPopoverOpen] = useState(false);
 
   // Stepper logic
   const nextStep = () => {
-    if (step === 3 && user?.plan === 'free' && user.monthlyUsage >= 2) {
-      toast.error('Limite do plano gratuito atingido (2 documentos/mês). Faça upgrade para continuar!', {
-        duration: 5000,
-      });
-      return;
-    }
     setStep((s) => Math.min(s + 1, 4));
   };
   const prevStep = () => setStep((s) => Math.max(s - 1, 1));
 
   const totalValue = selectedServices.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
 
-  const addService = (service: typeof CATALOG[0]) => {
+  const addService = (service: IService) => {
     setSelectedServices(prev => {
       const exists = prev.find(s => s.id === service.id);
       if (exists) {
         return prev.map(s => s.id === service.id ? { ...s, quantity: s.quantity + 1 } : s);
       }
-      return [...prev, { ...service, quantity: 1 }];
+      return [...prev, { id: service.id, name: service.name, price: service.default_price, quantity: 1 }];
     });
     toast.success('Serviço adicionado');
   };
@@ -97,18 +81,28 @@ const Generator = () => {
     setSelectedServices(prev => prev.map(s => s.id === id ? { ...s, quantity: qty } : s));
   };
 
-  const handleFinish = () => {
-    if (user?.plan === 'free' && user.monthlyUsage >= 2) {
-      toast.error('Limite atingido!');
-      return;
-    }
+  const handleFinish = async () => {
+    if (!selectedClient) return;
 
-    incrementUsage();
-    toast.success('Documento salvo e registrado com sucesso!');
-    // In a real app, here we would save to DB
-    setStep(1);
-    setSelectedClient(null);
-    setSelectedServices([]);
+    try {
+      await createDocument.mutateAsync({
+        type: docType,
+        clientId: selectedClient.id,
+        clientName: selectedClient.name,
+        value: totalValue,
+        items: selectedServices,
+        status: 'Pendente',
+        clientDataSnapshot: selectedClient
+      });
+
+      toast.success('Documento salvo e registrado com sucesso!');
+      setStep(1);
+      setSelectedClient(null);
+      setSelectedServices([]);
+      navigate('/app/documentos');
+    } catch (error: any) {
+      toast.error(error.message || 'Erro ao salvar documento');
+    }
   };
 
   return (
@@ -167,10 +161,15 @@ const Generator = () => {
                   <Button
                     variant="outline"
                     role="combobox"
+                    disabled={isLoadingClients}
                     aria-expanded={isClientPopoverOpen}
                     className="w-full justify-between h-12 text-lg"
                   >
-                    {selectedClient ? selectedClient.name : "Selecione um cliente..."}
+                    {isLoadingClients ? (
+                      <div className="flex items-center gap-2">
+                        <Loader2 className="h-4 w-4 animate-spin" /> Carregando...
+                      </div>
+                    ) : selectedClient ? selectedClient.name : "Selecione um cliente..."}
                     <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                   </Button>
                 </PopoverTrigger>
@@ -180,7 +179,7 @@ const Generator = () => {
                     <CommandList>
                       <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
                       <CommandGroup>
-                        {CLIENTS.map((client) => (
+                        {clients.map((client) => (
                           <CommandItem
                             key={client.id}
                             value={client.name}
@@ -212,10 +211,10 @@ const Generator = () => {
           {/* Step 2: Document Type */}
           {step === 2 && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {['Orçamento', 'Ordem de Serviço', 'Recibo'].map((type) => (
+              {['Orçamento', 'OS', 'Recibo'].map((type) => (
                 <div
                   key={type}
-                  onClick={() => setDocType(type)}
+                  onClick={() => setDocType(type as any)}
                   className={cn(
                     "cursor-pointer p-6 rounded-xl border-2 transition-all flex flex-col items-center gap-4 text-center",
                     docType === type ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-slate-100 hover:border-primary/30"
@@ -224,7 +223,7 @@ const Generator = () => {
                   <div className={cn("p-4 rounded-full", docType === type ? "bg-primary text-white" : "bg-slate-100")}>
                     <FileText className="h-8 w-8" />
                   </div>
-                  <span className="font-bold">{type}</span>
+                  <span className="font-bold">{type === 'OS' ? 'Ordem de Serviço' : type}</span>
                 </div>
               ))}
             </div>
@@ -236,7 +235,7 @@ const Generator = () => {
               <div className="flex flex-col gap-4">
                 <Label>Adicionar do Catálogo</Label>
                 <div className="flex flex-wrap gap-2">
-                  {CATALOG.map((item) => (
+                  {catalog.map((item) => (
                     <Button key={item.id} variant="outline" size="sm" onClick={() => addService(item)}>
                       <Plus className="h-3 w-3 mr-1" /> {item.name}
                     </Button>
@@ -319,6 +318,7 @@ const Generator = () => {
                     services={selectedServices}
                     total={totalValue}
                     date={new Date().toLocaleDateString('pt-BR')}
+                    primaryColor={user?.brandColor}
                   />
                 </PDFViewer>
               </div>
@@ -344,6 +344,7 @@ const Generator = () => {
                       services={selectedServices}
                       total={totalValue}
                       date={new Date().toLocaleDateString('pt-BR')}
+                      primaryColor={user?.brandColor}
                     />
                   }
                   fileName={`doc_${Date.now()}.pdf`}
@@ -355,8 +356,9 @@ const Generator = () => {
                     </Button>
                   )}
                 </PDFDownloadLink>
-                <Button className="flex-1 gap-2" onClick={handleFinish}>
-                  <Save className="h-4 w-4" /> Finalizar e Salvar
+                <Button className="flex-1 gap-2" onClick={handleFinish} disabled={createDocument.isPending}>
+                  {createDocument.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  Finalizar e Salvar
                 </Button>
               </div>
             </div>
@@ -366,7 +368,7 @@ const Generator = () => {
           <Button
             variant="ghost"
             onClick={prevStep}
-            disabled={step === 1}
+            disabled={step === 1 || createDocument.isPending}
             className="gap-1 px-4"
           >
             <ArrowLeft className="h-4 w-4" /> Anterior

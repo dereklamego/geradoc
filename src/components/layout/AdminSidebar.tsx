@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
+import { useUser, useAuthActions } from '@/store/useAppStore';
 import {
     Sidebar,
     SidebarContent,
@@ -32,7 +32,8 @@ const adminNavItems = [
 ];
 
 const AdminSidebar = () => {
-    const { user, logout } = useAuth();
+    const user = useUser();
+    const { logout } = useAuthActions();
     const navigate = useNavigate();
     const location = useLocation();
 

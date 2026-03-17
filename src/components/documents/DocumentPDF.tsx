@@ -126,10 +126,11 @@ interface DocumentPDFProps {
     }>;
     total: number;
     date: string;
-    plan?: 'free' | 'premium'; // Added plan
+    plan?: 'free' | 'premium';
+    primaryColor?: string; // Added primaryColor
 }
 
-const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, services, total, date, plan }) => (
+const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, services, total, date, plan, primaryColor = '#2563eb' }) => (
     <Document>
         <Page size="A4" style={styles.page}>
             {/* Watermark for Free Plan */}
@@ -155,7 +156,7 @@ const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, ser
                         </View>
                     )}
                     <View style={styles.companyInfo}>
-                        <Text style={styles.companyName}>{company.name || 'Sua Empresa'}</Text>
+                        <Text style={[styles.companyName, { color: primaryColor }]}>{company.name || 'Sua Empresa'}</Text>
                         <Text>{company.document}</Text>
                         <Text>{company.phone}</Text>
                         <Text>{company.address}</Text>
@@ -171,7 +172,9 @@ const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, ser
 
             {/* Client Info */}
             <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Dados do Cliente</Text>
+                <Text style={[styles.sectionTitle, { backgroundColor: `${primaryColor}15`, color: primaryColor, borderLeft: `3pt solid ${primaryColor}` }]}>
+                    Dados do Cliente
+                </Text>
                 <View style={styles.row}>
                     <Text style={styles.col1}>{client.name}</Text>
                     <Text style={styles.col3}>{client.document}</Text>

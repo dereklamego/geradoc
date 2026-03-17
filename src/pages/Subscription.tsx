@@ -1,12 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useUser } from "@/store/useAppStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Check, Sparkles, Building2 } from "lucide-react";
 import { toast } from "sonner";
+import { useEffect } from "react";
 
 const Subscription = () => {
-  const { user } = useAuth();
+  const user = useUser();
   const navigate = useNavigate();
 
   const plans = [
