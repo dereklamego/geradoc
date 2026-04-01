@@ -1,0 +1,44 @@
+backend/
+├── test/
+│   ├── setup.ts
+│   └── e2e/
+│       └── documents.e2e-spec.ts
+└── src/
+    ├── app.ts
+    ├── handler.ts
+    ├── server.ts
+    ├── config/
+    │   └── env.ts
+    ├── domains/
+    │   ├── auth/
+    │   │   ├── auth.repository.ts
+    │   │   ├── auth.routes.ts
+    │   │   ├── auth.schema.ts
+    │   │   ├── auth.service.spec.ts
+    │   │   └── auth.service.ts
+    │   ├── documents/
+    │   │   ├── documents.repository.ts
+    │   │   ├── documents.routes.ts
+    │   │   ├── documents.schema.ts
+    │   │   └── documents.service.ts
+    │   └── payments/
+    │       ├── payments.service.ts
+    │       └── providers/
+    │           └── stripe.provider.ts
+    ├── functions/
+    │   ├── auth/
+    │   │   └── auth.handler.ts
+    │   ├── documents/
+    │   │   └── documents.handler.ts
+    │   └── payments/
+    │       └── payments.handler.ts
+    ├── shared/
+    │   ├── db/
+    │   │   └── prisma.ts
+    │   └── http/
+    │       ├── errors.ts
+    │       ├── response.ts
+    │       └── middlewares/
+    │           └── auth.middleware.ts
+    └── types/
+        └── fastify.d.ts

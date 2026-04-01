@@ -1,5 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuthActions, useIsAuthLoading } from '@/store/useAppStore';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -11,23 +12,18 @@ const Register = () => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
+    const { register } = useAuthActions();
+    const isLoading = useIsAuthLoading();
     const navigate = useNavigate();
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        setIsLoading(true);
         try {
-            // Mock registration logic
-            await new Promise((resolve) => setTimeout(resolve, 1500));
-            toast.success('Conta criada! Enviamos um e-mail de confirmação para você.', {
-                duration: 5000,
-            });
-            navigate('/login');
-        } catch (error) {
-            toast.error('Erro ao criar conta. Tente novamente.');
-        } finally {
-            setIsLoading(false);
+            await register(name, email, password);
+            toast.success('Conta criada com sucesso! Bem-vindo ao GeraDoc.');
+            navigate('/app');
+        } catch (error: any) {
+            toast.error(error.message || 'Erro ao criar conta. Tente novamente.');
         }
     };
 
@@ -68,8 +64,10 @@ const Register = () => {
                             <Input
                                 id="password"
                                 type="password"
+                                placeholder="Mínimo 6 caracteres"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
+                                minLength={6}
                                 required
                             />
                         </div>

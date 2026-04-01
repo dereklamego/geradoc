@@ -1,4 +1,4 @@
-import Fastify, { FastifyInstance } from 'fastify';
+﻿import Fastify, { FastifyInstance, FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
@@ -6,8 +6,9 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { ZodError } from 'zod';
 import * as dotenv from 'dotenv';
-import { authRoutes } from '@/routes/auth';
-import { authenticate } from '@/middleware/auth';
+import { authRoutes } from './domains/auth/auth.routes.ts';
+import { documentRoutes } from './domains/documents/documents.routes.ts';
+import { authenticate } from './shared/http/middlewares/auth.middleware.ts';
 
 dotenv.config();
 
@@ -55,7 +56,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     });
 
     // Global Error Handler
-    app.setErrorHandler((error, _request, reply) => {
+    app.setErrorHandler((error: FastifyError, _request, reply) => {
         if (error instanceof ZodError) {
             return reply.status(400).send({
                 error: 'Validation Error',
@@ -86,6 +87,7 @@ export const buildApp = async (): Promise<FastifyInstance> => {
 
     // Routes
     await app.register(authRoutes, { prefix: '/api/auth' });
+    await app.register(documentRoutes, { prefix: '/api/documents' });
 
     // Health Check
     app.get('/health', async () => {

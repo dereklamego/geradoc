@@ -16,21 +16,16 @@ const Login = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const from = location.state?.from?.pathname || '/';
+    const from = location.state?.from?.pathname || '/app';
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
-            await login(email);
+            await login(email, password);
             toast.success('Bem-vindo ao GeraDoc!');
-
-            if (email === 'admin@geradoc.com') {
-                navigate('/admin');
-            } else {
-                navigate('/app');
-            }
-        } catch (error) {
-            toast.error('Erro ao fazer login. Tente novamente.');
+            navigate(from, { replace: true });
+        } catch (error: any) {
+            toast.error(error.message || 'Credenciais inválidas. Tente novamente.');
         }
     };
 
