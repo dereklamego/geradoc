@@ -23,30 +23,24 @@ const menuItems = [
         href: "/recursos/modelos",
         color: "secondary",
       },
-      {
-        title: "Relatórios",
-        description: "Acompanhe suas métricas e resultados",
-        icon: BarChart3,
-        href: "/recursos/relatorios",
-        color: "primary",
-      },
+
     ],
   },
   {
     label: "Soluções",
     children: [
       {
-        title: "Para Freelancers",
+        title: "Para Autônomos",
         description: "Contratos para profissionais autônomos",
         icon: Users,
-        href: "/freelancers",
+        href: "/solucoes",
         color: "primary",
       },
       {
         title: "Para Pequenas Empresas",
         description: "Soluções escaláveis para PMEs",
         icon: Shield,
-        href: "/empresas",
+        href: "/solucoes",
         color: "secondary",
       },
     ],
@@ -58,21 +52,21 @@ const menuItems = [
         title: "Central de Ajuda",
         description: "Encontre respostas para suas dúvidas",
         icon: HelpCircle,
-        href: "/ajuda",
+        href: "/suporte",
         color: "primary",
       },
       {
         title: "Tutoriais",
         description: "Aprenda a usar todas as funcionalidades",
         icon: Video,
-        href: "/tutoriais",
+        href: "/suporte",
         color: "secondary",
       },
       {
         title: "Contato",
         description: "Fale com nossa equipe de suporte",
         icon: Headphones,
-        href: "/contato",
+        href: "/suporte",
         color: "accent",
       },
     ],
@@ -168,14 +162,14 @@ export function Header() {
             ))}
 
             {simpleLinks.map((link) => (
-              <Link
+              <a
                 key={link.href}
-                to={link.href}
+                href={link.href}
                 className={`px-4 py-2 text-sm font-medium transition-colors font-display ${isActive(link.href) ? "text-primary" : "text-muted-foreground hover:text-foreground"
                   }`}
               >
                 {link.label}
-              </Link>
+              </a>
             ))}
           </nav>
 
@@ -234,14 +228,14 @@ export function Header() {
               ))}
 
               {simpleLinks.map((link) => (
-                <Link
+                <a
                   key={link.href}
-                  to={link.href}
+                  href={link.href}
                   className="block py-3 px-2 text-sm font-medium font-display hover:text-primary transition-colors"
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.label}
-                </Link>
+                </a>
               ))}
 
               <div className="flex flex-col gap-2 mt-6 pt-4 border-t border-border">

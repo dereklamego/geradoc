@@ -4,7 +4,7 @@ export interface IUser {
     name: string;
     email: string;
     role: 'user' | 'beta' | 'admin';
-    plan: 'free' | 'premium';
+    plan: 'free' | 'profissional' | 'empresarial';
     company_name?: string;
     document?: string; // CPF/CNPJ do prestador
     phone?: string;

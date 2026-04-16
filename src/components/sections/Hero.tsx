@@ -63,16 +63,16 @@ export function Hero() {
               className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-8"
             >
               <Button size="xl" asChild>
-                <Link to="/cadastro" className="gap-2">
+                <Link to="/register" className="gap-2">
                   Cadastre-se — é grátis
                   <ArrowRight className="w-5 h-5" />
                 </Link>
               </Button>
               <Button size="xl" variant="outline" asChild className="gap-2">
-                <Link to="/#como-funciona">
+                <a href="/#como-funciona">
                   <Play className="w-5 h-5" />
                   Veja como funciona
-                </Link>
+                </a>
               </Button>
             </motion.div>
 
@@ -83,7 +83,7 @@ export function Hero() {
               transition={{ duration: 0.5, delay: 0.4 }}
               className="text-sm text-muted-foreground font-body"
             >
-              ✓ Sem cartão de crédito &nbsp; ✓ Cancele quando quiser &nbsp; ✓ 3 contratos grátis/mês
+              ✓ Sem cartão de crédito &nbsp; ✓ Cancele quando quiser &nbsp; ✓ 2 contratos grátis/mês
             </motion.p>
           </div>
 
@@ -144,21 +144,7 @@ export function Hero() {
                 </div>
               </motion.div>
 
-              <motion.div
-                animate={{ y: [0, 10, 0] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                className="absolute -bottom-4 -left-4 bg-card rounded-2xl shadow-lg p-4 border border-border/50 hidden md:block"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl gradient-secondary flex items-center justify-center text-white text-lg">
-                    📄
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground font-display">+127 modelos</p>
-                    <p className="text-xs text-muted-foreground font-body">prontos para usar</p>
-                  </div>
-                </div>
-              </motion.div>
+
             </div>
           </motion.div>
         </div>

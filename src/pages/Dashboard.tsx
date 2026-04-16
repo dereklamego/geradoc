@@ -18,7 +18,8 @@ const Dashboard = () => {
     const navigate = useNavigate();
     const authUser = useUser();
     const { data: clients = [], isLoading: isLoadingClients } = useClients();
-    const { data: documents = [], isLoading: isLoadingDocs } = useDocuments();
+    const { data: docsResponse, isLoading: isLoadingDocs } = useDocuments();
+    const documents = docsResponse?.items || [];
     const { data: profile } = useProfile();
 
     const user = profile || authUser;
@@ -39,7 +40,9 @@ const Dashboard = () => {
         date: new Date(doc.date).toLocaleDateString('pt-BR')
     }));
 
-    const totalFaturamento = documents.reduce((acc, doc) => acc + doc.value, 0);
+    const totalFaturamento = documents
+        .filter(doc => doc.type === 'Recibo')
+        .reduce((acc, doc) => acc + doc.value, 0);
 
     return (
         <div className="space-y-6 animate-in fade-in duration-700">
@@ -101,7 +104,7 @@ const Dashboard = () => {
                             </CardHeader>
                             <CardContent>
                                 <div className="text-3xl font-bold">R$ {totalFaturamento.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
-                                <p className="text-xs mt-1 text-green-600 font-medium">Soma de todos os docs</p>
+                                <p className="text-xs mt-1 text-green-600 font-medium">Soma apenas dos Recibos gerados</p>
                             </CardContent>
                         </Card>
                         <Card className="border-none shadow-sm">

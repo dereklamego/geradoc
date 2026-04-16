@@ -17,9 +17,12 @@ async function apiFetch<T>(
     const token = getToken();
 
     const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
         ...(options.headers as Record<string, string>),
     };
+
+    if (options.body) {
+        headers['Content-Type'] = 'application/json';
+    }
 
     if (token) {
         headers['Authorization'] = `Bearer ${token}`;
@@ -100,10 +103,10 @@ export const api = {
     payments: {
         plans: () => apiFetch<any[]>('/payments/plans'),
 
-        createCheckout: (priceId: string) =>
+        createCheckout: (plan: string, billingCycle: string) =>
             apiFetch<{ url: string }>('/payments/create-checkout-session', {
                 method: 'POST',
-                body: JSON.stringify({ priceId }),
+                body: JSON.stringify({ plan, billingCycle }),
             }),
 
         createPortal: () =>

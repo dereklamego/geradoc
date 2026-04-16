@@ -59,7 +59,7 @@ export const usePlans = () => {
 
 export const useCreateCheckout = () => {
     return useMutation({
-        mutationFn: (priceId: string) => api.payments.createCheckout(priceId),
+        mutationFn: ({ plan, billingCycle }: { plan: string; billingCycle: string }) => api.payments.createCheckout(plan, billingCycle),
         onSuccess: ({ url }) => {
             window.location.href = url;
         },

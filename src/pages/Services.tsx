@@ -16,6 +16,16 @@ import {
     DialogTitle,
     DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -34,6 +44,7 @@ const Services = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingService, setEditingService] = useState<IService | null>(null);
+    const [serviceToDelete, setServiceToDelete] = useState<string | null>(null);
 
     const { register, handleSubmit, reset, setValue } = useForm<IService>();
 
@@ -64,14 +75,15 @@ const Services = () => {
         setIsDialogOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Tem certeza que deseja excluir este serviço?')) {
+    const confirmDelete = async () => {
+        if (serviceToDelete) {
             try {
-                await deleteService.mutateAsync(id);
+                await deleteService.mutateAsync(serviceToDelete);
                 toast.success('Serviço removido.');
             } catch (error) {
                 toast.error('Erro ao excluir serviço');
             }
+            setServiceToDelete(null);
         }
     };
 
@@ -162,7 +174,7 @@ const Services = () => {
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(service)}>
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(service.id)}>
+                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => setServiceToDelete(service.id)} disabled={deleteService.isPending}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
@@ -178,6 +190,27 @@ const Services = () => {
                     </TableBody>
                 </Table>
             </div>
+
+            <AlertDialog open={!!serviceToDelete} onOpenChange={(open) => !open && setServiceToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Serviço</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tem certeza que deseja excluir este serviço? Esta ação não pode ser desfeita e ele não estará mais disponível para novos orçamentos.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteService.isPending}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDelete} 
+                            disabled={deleteService.isPending}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {deleteService.isPending ? 'Excluindo...' : 'Sim, excluir'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

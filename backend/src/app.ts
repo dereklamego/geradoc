@@ -1,4 +1,4 @@
-﻿import Fastify, { FastifyInstance, FastifyError } from 'fastify';
+import Fastify, { FastifyInstance, FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import jwt from '@fastify/jwt';
@@ -6,8 +6,12 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { ZodError } from 'zod';
 import * as dotenv from 'dotenv';
+import fastifyRawBody from 'fastify-raw-body';
 import { authRoutes } from './domains/auth/auth.routes.ts';
 import { documentRoutes } from './domains/documents/documents.routes.ts';
+import { paymentsRoutes } from './domains/payments/payments.routes.ts';
+import { clientsRoutes } from './domains/clients/clients.routes.ts';
+import { servicesRoutes } from './domains/services/services.routes.ts';
 import { authenticate } from './shared/http/middlewares/auth.middleware.ts';
 
 dotenv.config();
@@ -19,7 +23,18 @@ export const buildApp = async (): Promise<FastifyInstance> => {
 
     // Security Plugins
     await app.register(helmet);
-    await app.register(cors);
+    await app.register(cors, {
+        origin: '*', // Permite de qualquer frontend (temporário/desenvolvimento)
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    });
+
+    // Provide raw body buffering for Stripe Webhooks securely
+    await app.register(fastifyRawBody, {
+        field: 'rawBody',
+        global: false,
+        encoding: false,
+        runFirst: true,
+    });
 
     // Authentication Plugin
     await app.register(jwt, {
@@ -88,6 +103,9 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     // Routes
     await app.register(authRoutes, { prefix: '/api/auth' });
     await app.register(documentRoutes, { prefix: '/api/documents' });
+    await app.register(paymentsRoutes, { prefix: '/api/payments' });
+    await app.register(clientsRoutes, { prefix: '/api/clients' });
+    await app.register(servicesRoutes, { prefix: '/api/services' });
 
     // Health Check
     app.get('/health', async () => {

@@ -3,14 +3,17 @@ import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
 import logoGeradoc from "@/assets/logo-geradoc.png";
+import { useUser } from "@/store/useAppStore";
 
 const benefits = [
-  "3 contratos grátis por mês",
+  "2 contratos grátis por mês",
   "Sem cartão de crédito",
   "Cancele quando quiser",
 ];
 
 export function CTA() {
+  const user = useUser();
+
   return (
     <section className="py-20 md:py-28 bg-background relative overflow-hidden">
       {/* Background Elements */}
@@ -46,7 +49,7 @@ export function CTA() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
             <Button size="xl" asChild>
-              <Link to="/gerador" className="gap-2">
+              <Link to={user ? "/app" : "/register"} className="gap-2">
                 Criar Meu Primeiro Contrato
                 <ArrowRight className="w-5 h-5" />
               </Link>

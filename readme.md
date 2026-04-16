@@ -4,87 +4,74 @@ O **GeraDoc** é uma plataforma SaaS projetada para simplificar a vida de presta
 
 ## 🚀 Foco do Projeto
 
-Eliminar o uso de planilhas complexas ou editores de texto manuais. O GeraDoc centraliza a gestão de clientes, catálogo de serviços e a geração automatizada de documentos em uma interface moderna, rápida e intuitiva.
+Eliminar o uso de planilhas complexas ou editores de texto manuais. O GeraDoc centraliza a gestão de clientes, catálogo de serviços e a geração automatizada de documentos em uma interface moderna, rápida e intuitiva, perfeitamente integrada a um backend robusto (PostgreSQL) e sistema de pagamentos recorrentes (Stripe).
 
 ---
 
 ## ✨ Funcionalidades Principais
 
-- **Gerador de Documentos**: Criação guiada de Orçamentos, Ordens de Serviço (OS) e Recibos com cálculos automáticos de totais e impostos.
-- **Gestão de Clientes (CRM)**: Cadastro completo de clientes para preenchimento automático em novos documentos.
-- **Catálogo de Serviços**: Armazenamento de itens e preços recorrentes para seleção rápida.
-- **Dashboard Financeiro**: Acompanhamento de documentos gerados, faturamento mensal e métricas de desempenho.
-- **Sistema de Assinaturas**: Planos Gratuito e Pro, integrando limites de uso e recursos avançados.
-- **Área Administrativa**: Painel para gestão de usuários, monitoramento de planos e configurações globais.
-- **Exportação em PDF**: Geração de documentos profissionais prontos para envio ao cliente.
+- **Gerador de Documentos**: Criação guiada de Orçamentos, Ordens de Serviço (OS) e Recibos com cálculos automáticos de totais, exibição de logos da empresa emissora e personalização PDF.
+- **Gestão de Clientes (CRM)**: Cadastro completo de clientes integrados ao banco de dados, para seleção instantânea nos relatórios.
+- **Catálogo de Serviços**: Armazenamento de itens, preços padrão e garantias em PostgreSQL para acelerar as operações diárias.
+- **Dashboard Financeiro**: Acompanhamento de documentos gerados, métricas de conta e Faturamento Inteligente (filtra automaticamente a soma unicamente de "Recibos").
+- **Sistema de Assinaturas (Stripe)**: Planos Gratuito, Profissional e Empresarial reais. Integração completa com o Stripe Checkout, Portal do Cliente (Billing Portal) e proteção automatizada via Webhooks seguros.
+- **Exportação e Visualização em PDF**: Emissão de documentos profissionais em modal integrado via `@react-pdf/renderer` pronto para exportação local das impressoras.
 
 ---
 
 ## 🖥️ Telas e Navegação
 
-### Público (Landing Page)
-- **Home**: Apresentação visual, estatísticas e benefícios.
-- **Recursos**: Detalhes técnicos sobre o Gerador, Modelos e Relatórios.
-- **Preços**: Comparativo de planos (Free vs Pro).
-- **Login/Registro**: Fluxo simplificado de acesso e criação de conta.
-
-### Área do Usuário (Logado)
-- **Dashboard**: Visão geral das atividades recentes e status de uso.
-- **Clientes**: Lista e cadastro detalhado de clientes.
-- **Gerador**: Interface central para criação de novos documentos.
-- **Documentos**: Histórico e gestão de todos os PDFs gerados.
-- **Assinatura**: Gestão de planos e métodos de pagamento.
-- **Perfil**: Configurações de conta e dados pessoais.
-
-### Área Administrativa
-- **Admin Dashboard**: Visibilidade total sobre usuários ativos, planos e saúde do sistema.
+### Área do Usuário (Sistema)
+- **Dashboard**: Visão geral de métricas, atividade recente e status de cota do plano Free.
+- **Clientes**: CRUD completo com lista e modal intuitivos (Shadcn UI).
+- **Serviços**: Gestão de catálogo padrão ("Novo Serviço").
+- **Gerador**: Múltiplos passos para gerar de forma rápida e segura relatórios valiosos.
+- **Documentos**: Histórico de PDFs gerados, leitura em PDF Viewer embutido, acompanhamento de valores e exclusão através de Modais Nativos.
+- **Assinatura / Payment**: Migração transparente com Toggle de planos, passando pelo Checkout oficial da Stripe validando melhorias instantaneamente ("Assinatura Especialista/PRO").
 
 ---
 
-## 🛠️ Tecnologias Utilizadas
+## 🛠️ Tecnologias Utilizadas (Frontend)
 
-O projeto utiliza o que há de mais moderno no ecossistema React para garantir alta performance e experiência de usuário premium:
-
-- **Core**: [React 18](https://reactjs.org/) + [Vite](https://vitejs.dev/) + [TypeScript](https://www.typescriptlang.org/)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (baseado em Radix UI)
-- **Animações**: [Framer Motion](https://www.framer.com/motion/)
-- **Formulários & Validação**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/)
-- **Gerenciamento de Estado/Dados**: [TanStack Query (React Query)](https://tanstack.com/query/latest)
-- **Ícones**: [Lucide React](https://lucide.dev/)
-- **PDF**: [@react-pdf/renderer](https://react-pdf.org/)
+- **Core**: [React 18](https://reactjs.org/) + Vite + TypeScript
+- **Styling**: Tailwind CSS
+- **UI Components**: shadcn/ui (AlertDialog, Dropdowns, Modals, Tables, Forms)
+- **Animações**: Framer Motion
+- **Formulários & Validação**: React Hook Form + Zod
+- **Gerenciamento de Estado/Dados**: Zustand (Estado UI e Store) + TanStack Query (Requisições HTTP Caching)
+- **PDF**: `@react-pdf/renderer` para renderização limpa baseada em componentes reativos
 
 ---
 
-## ⚙️ Como executar o projeto
+## ⚙️ Como executar o projeto (Full Stack)
 
 ### Pré-requisitos
-- Node.js instalado
-- Gerenciador de pacotes (npm, yarn ou pnpm)
+- Node.js instalado (v18+)
+- Backend rodando paralelamente na porta `3000` (Veja o arquivo `README_BACKEND.md` na pasta /backend).
+- Chaves públicas do Stripe (opcional se não testar compras).
 
 ### Instalação
 1. Clone o repositório
-2. Instale as dependências:
+2. Configure o arquivo `.env` referenciando a API local do Backend.
+3. Instale as dependências:
    ```bash
    npm install
    ```
-3. Inicie o servidor de desenvolvimento:
+4. Inicie o servidor frontend:
    ```bash
    npm run dev
    ```
+5. O sistema ficará disponível via `localhost` (Porta Vite Padrão ou Vite Custom :8080).
 
 ---
 
-## 🔑 Acessos de Demonstração (MVP)
+## 🔑 Como Testar e Simular Fluxos Atuais (Sem limites Fake)
 
-**Super Admin:**
-- **E-mail:** `admin@geradoc.com`
-- **Senha:** (qualquer uma)
-
-**Usuário Comum:**
-- **E-mail:** `user@geradoc.com`
-- **Senha:** (qualquer uma)
-- **Usuário Pro:** `pro@geradoc.com`
-
----
-*Este projeto foi desenvolvido com foco em experiência de usuário (UX) e escalabilidade.*
+Acabou a época dos mocks ("Mocking Storage"). Agora os limites são calculados e regidos por Backend.
+Para testar hoje:
+1. Pressione **"Não tem conta? Registre-se"** na tela de Login. 
+2. Realize o cadastro com qualquer Email (`testes@app.com`). A base `Postgres` irá salvar e hashear essa senha.
+3. Acesse o sistema. Identifique que o seu Dashboard diz "Uso de mês - Gratuito" indicando limite restrito.
+4. Vá em **Clientes** e **Serviços** e popule um pouco o seu banco de dados criando exemplos. E teste o botão "Excluir" em alguns registros para atestar o fluxo de UI reativo do *AlertDialog*.
+5. Salve um novo Documento do tipo `Recibo`. Olhe no Dashboard e veja o Faturamento aumentar.
+6. Vá na aba de **Assinatura** -> Escolha Profissional Mensal -> Pague digitando na janela nova o cartão universal restrito do Stripe Checkout (`4242 4242 4242...`), volte na página, seu perfil agora recarregará como PRO.

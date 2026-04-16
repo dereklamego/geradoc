@@ -34,17 +34,47 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { PDFViewer } from '@react-pdf/renderer';
 import DocumentPDF from '@/components/documents/DocumentPDF';
 import { useUser } from '@/store/useAppStore';
-import { useDocuments } from '@/hooks/use-api';
+import { useDocuments, useDeleteDocument } from '@/hooks/use-api';
 import { IDocument } from '@/types';
+import { toast } from 'sonner';
 
 const Documents = () => {
     const user = useUser();
-    const { data: documents = [], isLoading } = useDocuments();
+    const { data: docsResponse, isLoading } = useDocuments();
+    const documents = docsResponse?.items || [];
+    const deleteDoc = useDeleteDocument();
+    
     const [searchTerm, setSearchTerm] = useState('');
     const [viewingDoc, setViewingDoc] = useState<IDocument | null>(null);
+    const [docToDelete, setDocToDelete] = useState<string | null>(null);
+
+    const confirmDelete = () => {
+        if (docToDelete) {
+            deleteDoc.mutate(docToDelete, {
+                onSuccess: () => {
+                    toast.success('Documento excluído com sucesso!');
+                    setDocToDelete(null);
+                },
+                onError: () => {
+                    toast.error('Erro ao excluir documento.');
+                    setDocToDelete(null);
+                }
+            });
+        }
+    };
 
     const filteredDocs = documents.filter(doc =>
         doc.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,7 +162,11 @@ const Documents = () => {
                                                             <Printer className="h-4 w-4" /> Imprimir
                                                         </DropdownMenuItem>
                                                         <DropdownMenuSeparator />
-                                                        <DropdownMenuItem className="gap-2 text-red-600">
+                                                        <DropdownMenuItem 
+                                                            className="gap-2 text-red-600" 
+                                                            onClick={() => setDocToDelete(doc.id)}
+                                                            disabled={deleteDoc.isPending}
+                                                        >
                                                             Excluir
                                                         </DropdownMenuItem>
                                                     </DropdownMenuContent>
@@ -182,6 +216,27 @@ const Documents = () => {
                     </div>
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!docToDelete} onOpenChange={(open) => !open && setDocToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Você tem certeza absoluta?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Essa ação não pode ser desfeita. O documento será excluído permanentemente do seu histórico.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteDoc.isPending}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDelete} 
+                            disabled={deleteDoc.isPending}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {deleteDoc.isPending ? 'Excluindo...' : 'Sim, excluir'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };

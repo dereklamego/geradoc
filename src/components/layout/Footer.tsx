@@ -3,24 +3,17 @@ import logoGeradoc from "@/assets/logo-geradoc.png";
 
 const footerLinks = {
   produto: [
-    { label: "Gerador de Contratos", href: "/gerador" },
-    { label: "Modelos", href: "/modelos" },
+    { label: "Gerador de Contratos", href: "/recursos/gerador" },
+    { label: "Modelos", href: "/recursos/modelos" },
     { label: "Automação", href: "/automacao" },
-    { label: "Integrações", href: "/integracoes" },
     { label: "Preços", href: "/#planos" },
   ],
   recursos: [
     { label: "Central de Ajuda", href: "/ajuda" },
     { label: "Tutoriais", href: "/tutoriais" },
-    { label: "Blog", href: "/blog" },
-    { label: "API Docs", href: "/api" },
-    { label: "Status do Sistema", href: "/status" },
   ],
   empresa: [
     { label: "Sobre Nós", href: "/sobre" },
-    { label: "Carreiras", href: "/carreiras" },
-    { label: "Parceiros", href: "/parceiros" },
-    { label: "Imprensa", href: "/imprensa" },
     { label: "Contato", href: "/contato" },
   ],
   legal: [
@@ -31,12 +24,15 @@ const footerLinks = {
   ],
 };
 
-const socialLinks = [
-  { name: "LinkedIn", href: "#", icon: "in" },
-  { name: "Instagram", href: "#", icon: "ig" },
-  { name: "YouTube", href: "#", icon: "yt" },
-  { name: "Twitter", href: "#", icon: "tw" },
-];
+const socialLinks: any[] = [];
+
+const renderLink = (link: { label: string; href: string }) => {
+  const className = "text-sm text-background/70 hover:text-background transition-colors font-body";
+  if (link.href.startsWith("/#")) {
+    return <a href={link.href} className={className}>{link.label}</a>;
+  }
+  return <Link to={link.href} className={className}>{link.label}</Link>;
+};
 
 export function Footer() {
   return (
@@ -50,7 +46,7 @@ export function Footer() {
               <img 
                 src={logoGeradoc} 
                 alt="GeraDoc" 
-                className="h-14 w-auto brightness-0 invert opacity-90"
+                className="h-14 w-auto"
               />
             </Link>
             <p className="text-background/70 text-sm leading-relaxed font-body mb-6 max-w-xs">
@@ -80,12 +76,7 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.produto.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-background/70 hover:text-background transition-colors font-body"
-                  >
-                    {link.label}
-                  </Link>
+                  {renderLink(link)}
                 </li>
               ))}
             </ul>
@@ -99,12 +90,7 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.recursos.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-background/70 hover:text-background transition-colors font-body"
-                  >
-                    {link.label}
-                  </Link>
+                  {renderLink(link)}
                 </li>
               ))}
             </ul>
@@ -118,12 +104,7 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.empresa.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-background/70 hover:text-background transition-colors font-body"
-                  >
-                    {link.label}
-                  </Link>
+                  {renderLink(link)}
                 </li>
               ))}
             </ul>
@@ -137,12 +118,7 @@ export function Footer() {
             <ul className="space-y-3">
               {footerLinks.legal.map((link) => (
                 <li key={link.href}>
-                  <Link
-                    to={link.href}
-                    className="text-sm text-background/70 hover:text-background transition-colors font-body"
-                  >
-                    {link.label}
-                  </Link>
+                  {renderLink(link)}
                 </li>
               ))}
             </ul>

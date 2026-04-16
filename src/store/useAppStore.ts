@@ -10,7 +10,7 @@ function mapUser(backendUser: any): IUser {
         name: backendUser.name,
         email: backendUser.email,
         role: backendUser.role === 'ADMIN' ? 'admin' : 'user',
-        plan: backendUser.plan === 'PREMIUM' ? 'premium' : 'free',
+        plan: backendUser.plan === 'PROFISSIONAL' ? 'profissional' : backendUser.plan === 'EMPRESARIAL' ? 'empresarial' : 'free',
         company_name: backendUser.companyName,
         monthlyUsage: 0,
     };

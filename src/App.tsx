@@ -25,6 +25,17 @@ import NotFound from "./pages/NotFound";
 import GeradorFeature from "./pages/features/GeradorFeature";
 import ModelosFeature from "./pages/features/ModelosFeature";
 import RelatoriosFeature from "./pages/features/RelatoriosFeature";
+import SolucoesFeature from "./pages/features/SolucoesFeature";
+import SuporteFeature from "./pages/features/SuporteFeature";
+import AutomacaoFeature from "./pages/features/AutomacaoFeature";
+import AjudaFeature from "./pages/features/AjudaFeature";
+import TutoriaisFeature from "./pages/features/TutoriaisFeature";
+import SobreFeature from "./pages/features/SobreFeature";
+import ContatoFeature from "./pages/features/ContatoFeature";
+import TermosFeature from "./pages/features/TermosFeature";
+import PrivacidadeFeature from "./pages/features/PrivacidadeFeature";
+import CookiesFeature from "./pages/features/CookiesFeature";
+import LgpdFeature from "./pages/features/LgpdFeature";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +53,17 @@ const App = () => (
           <Route path="/recursos/gerador" element={<GeradorFeature />} />
           <Route path="/recursos/modelos" element={<ModelosFeature />} />
           <Route path="/recursos/relatorios" element={<RelatoriosFeature />} />
+          <Route path="/solucoes" element={<SolucoesFeature />} />
+          <Route path="/suporte" element={<SuporteFeature />} />
+          <Route path="/automacao" element={<AutomacaoFeature />} />
+          <Route path="/ajuda" element={<AjudaFeature />} />
+          <Route path="/tutoriais" element={<TutoriaisFeature />} />
+          <Route path="/sobre" element={<SobreFeature />} />
+          <Route path="/contato" element={<ContatoFeature />} />
+          <Route path="/termos" element={<TermosFeature />} />
+          <Route path="/privacidade" element={<PrivacidadeFeature />} />
+          <Route path="/cookies" element={<CookiesFeature />} />
+          <Route path="/lgpd" element={<LgpdFeature />} />
 
           {/* User Dashboard Routes - SaaS App */}
           <Route

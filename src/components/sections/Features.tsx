@@ -16,8 +16,6 @@ const features = [
     icon: FileText,
     title: "Automação de Contratos",
     description: "Gere contratos profissionais automaticamente com nossos modelos inteligentes. Economize horas de trabalho e elimine erros manuais.",
-    cta: "Explore a automação",
-    href: "/gerador",
     color: "primary",
     image: "contract",
   },
@@ -34,8 +32,6 @@ const features = [
     icon: BarChart3,
     title: "Análises e Relatórios",
     description: "Acompanhe métricas importantes: contratos fechados, valores totais, clientes ativos e muito mais em dashboards visuais.",
-    cta: "Explorar relatórios",
-    href: "/relatorios",
     color: "primary",
     image: "analytics",
   },
@@ -130,12 +126,14 @@ export function Features() {
                   <p className="text-lg text-muted-foreground mb-6 font-body leading-relaxed">
                     {feature.description}
                   </p>
-                  <Button variant="outline" asChild className="group">
-                    <Link to={feature.href} className="gap-2">
-                      {feature.cta}
-                      <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </Button>
+                  {feature.cta && feature.href && (
+                    <Button variant="outline" asChild className="group">
+                      <Link to={feature.href} className="gap-2">
+                        {feature.cta}
+                        <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                      </Link>
+                    </Button>
+                  )}
                 </div>
 
                 {/* Visual */}

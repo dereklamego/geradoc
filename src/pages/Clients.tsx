@@ -18,6 +18,16 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
     Select,
     SelectContent,
     SelectItem,
@@ -42,6 +52,7 @@ const Clients = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [editingClient, setEditingClient] = useState<IClient | null>(null);
+    const [clientToDelete, setClientToDelete] = useState<string | null>(null);
 
     const navigate = useNavigate();
     const { register, handleSubmit, reset, setValue, control } = useForm<Omit<IClient, 'id'>>({
@@ -79,14 +90,15 @@ const Clients = () => {
         setIsDialogOpen(true);
     };
 
-    const handleDelete = async (id: string) => {
-        if (confirm('Tem certeza que deseja excluir este cliente?')) {
+    const confirmDelete = async () => {
+        if (clientToDelete) {
             try {
-                await deleteClient.mutateAsync(id);
+                await deleteClient.mutateAsync(clientToDelete);
                 toast.success('Cliente removido.');
             } catch (error) {
                 toast.error('Erro ao excluir cliente');
             }
+            setClientToDelete(null);
         }
     };
 
@@ -202,7 +214,7 @@ const Clients = () => {
                                         <Button variant="ghost" size="icon" onClick={() => handleEdit(client)} title="Editar">
                                             <Pencil className="h-4 w-4" />
                                         </Button>
-                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => handleDelete(client.id)} title="Excluir" disabled={deleteClient.isPending}>
+                                        <Button variant="ghost" size="icon" className="text-red-500" onClick={() => setClientToDelete(client.id)} title="Excluir" disabled={deleteClient.isPending}>
                                             <Trash2 className="h-4 w-4" />
                                         </Button>
                                     </TableCell>
@@ -218,6 +230,27 @@ const Clients = () => {
                     </TableBody>
                 </Table>
             </div>
+
+            <AlertDialog open={!!clientToDelete} onOpenChange={(open) => !open && setClientToDelete(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir Cliente</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Tem certeza que deseja excluir este cliente? Esta ação não pode ser desfeita e removerá os dados do cliente permanentemente.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={deleteClient.isPending}>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction 
+                            onClick={confirmDelete} 
+                            disabled={deleteClient.isPending}
+                            className="bg-red-600 hover:bg-red-700"
+                        >
+                            {deleteClient.isPending ? 'Excluindo...' : 'Sim, excluir'}
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 };
