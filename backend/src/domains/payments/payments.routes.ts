@@ -34,6 +34,42 @@ export async function paymentsRoutes(app: FastifyInstance) {
         }
     );
 
+    // Create Customer Portal Session — manage payment methods, invoices, plan
+    app.post(
+        '/create-portal-session',
+        {
+            preHandler: [app.authenticate],
+            schema: {
+                description: 'Cria uma sessão do Stripe Customer Portal',
+                tags: ['payments'],
+                security: [{ bearerAuth: [] }],
+            },
+        },
+        async (request, reply) => {
+            const userId = (request as any).user.id;
+            const result = await paymentService.createPortalSession(userId);
+            return reply.send(result);
+        }
+    );
+
+    // Get default payment method (brand + last4 + expiry)
+    app.get(
+        '/method',
+        {
+            preHandler: [app.authenticate],
+            schema: {
+                description: 'Retorna o método de pagamento padrão do usuário',
+                tags: ['payments'],
+                security: [{ bearerAuth: [] }],
+            },
+        },
+        async (request, reply) => {
+            const userId = (request as any).user.id;
+            const result = await paymentService.getPaymentMethod(userId);
+            return reply.send(result);
+        }
+    );
+
     // Cancel Subscription
     app.post(
         '/cancel-subscription',

@@ -21,12 +21,23 @@ model User {
   stripeSubscriptionId String?  @unique
   subscription         Subscription?
 
-  documents     Document[]
-  folders       Folder[]
-  clients       Client[]
-  services      Service[]
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  // Billing cycle (lazy applied; will be replaced by Stripe subscription dates)
+  currentPeriodStart      DateTime  @default(now())
+  currentPeriodEnd        DateTime  @default(now())
+  monthlyUsage            Int       @default(0)
+
+  // Scheduled plan change (downgrades take effect at currentPeriodEnd)
+  scheduledPlan           Plan?
+  scheduledPlanChangeAt   DateTime?
+
+  documents      Document[]
+  folders        Folder[]
+  clients        Client[]
+  services       Service[]
+  companyProfile CompanyProfile?
+  planEvents     PlanEvent[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
 }
 
 model Subscription {
@@ -40,6 +51,21 @@ model Subscription {
   cancelAtPeriodEnd  Boolean  @default(false)
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+model CompanyProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  name        String?
+  document    String?
+  phone       String?
+  address     String?
+  brandColor  String   @default("#2563eb")
+  // logoStorage holds a base64 data URL now; swap StorageService for S3 key in the future
+  logoStorage String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // Documents and Content
@@ -135,5 +161,18 @@ model StripeEvent {
   id        String   @id // Webhook event ID
   type      String
   createdAt DateTime @default(now())
+}
+
+// Audit log for plan changes (upgrade, downgrade, cancellation, admin override)
+model PlanEvent {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  fromPlan   String
+  toPlan     String
+  eventType  String   // upgrade | downgrade | cancel | admin_change
+  actorId    String?  // null = system/stripe, userId = self, adminId = admin override
+  metadata   Json?    // e.g. { billingCycle, scheduledAt, stripeSubscriptionId }
+  createdAt  DateTime @default(now())
 }
 

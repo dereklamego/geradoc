@@ -3,17 +3,14 @@ import App from "./App.tsx";
 import "./index.css";
 
 async function enableMocking() {
-    if (!import.meta.env.DEV) {
+    // Disabled: real backend is the source of truth.
+    // To re-enable for offline dev, set VITE_USE_MSW=true in .env.local
+    if (!import.meta.env.DEV || import.meta.env.VITE_USE_MSW !== 'true') {
         return;
     }
 
     const { worker } = await import('./mocks/browser');
-
-    // `worker.start()` returns a Promise that resolves
-    // once the Service Worker is up and ready to intercept requests.
-    return worker.start({
-        onUnhandledRequest: 'bypass',
-    });
+    return worker.start({ onUnhandledRequest: 'bypass' });
 }
 
 enableMocking().then(() => {

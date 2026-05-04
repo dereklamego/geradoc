@@ -1,0 +1,6 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "currentPeriodEnd" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "currentPeriodStart" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN     "monthlyUsage" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "scheduledPlan" "Plan",
+ADD COLUMN     "scheduledPlanChangeAt" TIMESTAMP(3);

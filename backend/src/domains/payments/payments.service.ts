@@ -39,11 +39,61 @@ export class PaymentService {
         const priceId = planConfig[billingCycle.toLowerCase()];
         if (!priceId) throw new Error('Ciclo de cobrança inválido.');
 
-        const successUrl = `${env.FRONTEND_URL}/app/assinatura?success=true`;
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error('Usuário não encontrado.');
+
+        const successUrl = `${env.FRONTEND_URL}/app/assinatura?success=true&session_id={CHECKOUT_SESSION_ID}`;
         const cancelUrl = `${env.FRONTEND_URL}/app/assinatura?canceled=true`;
 
-        const session = await this.stripeProvider.createCheckoutSession(userId, priceId, successUrl, cancelUrl);
+        const session = await this.stripeProvider.createCheckoutSession({
+            userId,
+            priceId,
+            successUrl,
+            cancelUrl,
+            customerId: user.stripeCustomerId,
+            customerEmail: user.email,
+        });
         return { url: session.url };
+    }
+
+    async createPortalSession(userId: string) {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) throw new Error('Usuário não encontrado.');
+
+        const customerId = await this.stripeProvider.ensureCustomer({
+            customerId: user.stripeCustomerId,
+            email: user.email,
+            name: user.name,
+            userId: user.id,
+        });
+
+        if (customerId !== user.stripeCustomerId) {
+            await prisma.user.update({
+                where: { id: userId },
+                data: { stripeCustomerId: customerId },
+            });
+        }
+
+        const returnUrl = `${env.FRONTEND_URL}/app/perfil`;
+        const session = await this.stripeProvider.createPortalSession(customerId, returnUrl);
+        return { url: session.url };
+    }
+
+    async getPaymentMethod(userId: string) {
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user || !user.stripeCustomerId) return { paymentMethod: null };
+
+        const pm = await this.stripeProvider.getDefaultPaymentMethod(user.stripeCustomerId);
+        if (!pm || !pm.card) return { paymentMethod: null };
+
+        return {
+            paymentMethod: {
+                brand: pm.card.brand,
+                last4: pm.card.last4,
+                expMonth: pm.card.exp_month,
+                expYear: pm.card.exp_year,
+            },
+        };
     }
 
     async cancelSubscription(userId: string) {
@@ -58,11 +108,21 @@ export class PaymentService {
 
         const subscription = await this.stripeProvider.cancelSubscription(user.stripeSubscriptionId);
 
-        await prisma.subscription.update({
+        const sub = await prisma.subscription.update({
             where: { userId },
+            data: { cancelAtPeriodEnd: true },
+        });
+
+        const dbUser = await prisma.user.findUnique({ where: { id: userId }, select: { plan: true } });
+        await prisma.planEvent.create({
             data: {
-                cancelAtPeriodEnd: true
-            }
+                userId,
+                fromPlan: dbUser?.plan ?? 'UNKNOWN',
+                toPlan: 'FREE',
+                eventType: 'cancel',
+                actorId: userId,
+                metadata: { cancelAt: sub.currentPeriodEnd.toISOString() },
+            },
         });
 
         return { message: 'Assinatura cancelada com sucesso. Você ainda tem acesso até o fim do período atual.' };
@@ -159,15 +219,27 @@ export class PaymentService {
         const priceId = stripeSubscription.items.data[0]?.price.id;
         const { plan, billingCycle } = getPlanInfoByPriceId(priceId);
 
-        // Treat past_due or canceled as reverting to FREE logic or updating status
         let activePlan = plan;
         if (stripeSubscription.status === 'canceled' || stripeSubscription.status === 'unpaid') {
             activePlan = 'FREE';
         }
 
+        const newPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
+        const newPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+
+        // Read current cycle to detect renewal (reset usage when period rolls)
+        const dbUser = await prisma.user.findUnique({ where: { id: userId } });
+        const cycleRolled = !dbUser
+            || !dbUser.currentPeriodStart
+            || newPeriodStart.getTime() > dbUser.currentPeriodStart.getTime();
+
+        // Order: cycle → usage reset → plan/status
         await prisma.user.update({
             where: { id: userId },
             data: {
+                currentPeriodStart: newPeriodStart,
+                currentPeriodEnd: newPeriodEnd,
+                ...(cycleRolled ? { monthlyUsage: 0 } : {}),
                 plan: activePlan as any,
                 stripeCustomerId: stripeSubscription.customer as string,
                 stripeSubscriptionId: subscriptionId,
@@ -181,14 +253,14 @@ export class PaymentService {
                 status: stripeSubscription.status,
                 priceId: priceId,
                 billingCycle: billingCycle,
-                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+                currentPeriodEnd: newPeriodEnd,
                 cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
             },
             update: {
                 status: stripeSubscription.status,
                 priceId: priceId,
                 billingCycle: billingCycle,
-                currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+                currentPeriodEnd: newPeriodEnd,
                 cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end,
             }
         });

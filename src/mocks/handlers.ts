@@ -15,10 +15,24 @@ export const handlers = [
             return new HttpResponse(null, { status: 401 });
         }
 
+        localStorage.setItem('geradoc_user_email', user.email);
+
         return HttpResponse.json({
             user,
             token: `mock-token-${user.id}`
         });
+    }),
+
+    http.get('/api/auth/me', async () => {
+        await delay(300);
+        const activeEmail = localStorage.getItem('geradoc_user_email');
+        if (!activeEmail) return new HttpResponse(null, { status: 401 });
+
+        const users = db.getUsers();
+        const user = users.find(u => u.email === activeEmail);
+        if (!user) return new HttpResponse(null, { status: 401 });
+
+        return HttpResponse.json(user);
     }),
 
     // --- CLIENTS ---
@@ -105,29 +119,29 @@ export const handlers = [
     }),
 
     // --- PROFILE ---
+    http.get('/api/profile', async () => {
+        await delay(300);
+        const activeEmail = localStorage.getItem('geradoc_user_email') || 'user@geradoc.com';
+        const user = db.getUsers().find(u => u.email === activeEmail);
+        if (!user) return new HttpResponse(null, { status: 404 });
+        return HttpResponse.json(user);
+    }),
+
     http.patch('/api/profile', async ({ request }) => {
         await delay(800);
         const body = (await request.json()) as Partial<IUser>;
         const activeEmail = localStorage.getItem('geradoc_user_email') || 'user@geradoc.com';
-
-        const updatedUser = db.updateUser(activeEmail, body);
-
-        if (!updatedUser) {
-            return new HttpResponse(null, { status: 404 });
-        }
-
+        const updatedUser = db.updateUser(activeEmail, { company_name: (body as any).name ?? undefined, ...body });
+        if (!updatedUser) return new HttpResponse(null, { status: 404 });
         return HttpResponse.json(updatedUser);
     }),
 
     http.patch('/api/profile/logo', async ({ request }) => {
-        await delay(1200);
-        // In a real mock, we'd handle FormData. Here we'll just simulate success.
+        await delay(600);
+        const { base64 } = (await request.json()) as { base64: string };
         const activeEmail = localStorage.getItem('geradoc_user_email') || 'user@geradoc.com';
-        const mockLogoUrl = 'https://api.dicebear.com/7.x/initials/svg?seed=GD';
-
-        const updatedUser = db.updateUser(activeEmail, { logoUrl: mockLogoUrl });
-
-        return HttpResponse.json({ logoUrl: mockLogoUrl });
+        db.updateUser(activeEmail, { logoUrl: base64 });
+        return HttpResponse.json({ logoUrl: base64 });
     }),
 
     // --- SERVICES ---

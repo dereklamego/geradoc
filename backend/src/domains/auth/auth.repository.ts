@@ -10,6 +10,7 @@ export class AuthRepository {
             where: { id },
             include: {
                 subscription: true,
+                companyProfile: true,
             },
         });
     }
@@ -24,6 +25,13 @@ export class AuthRepository {
         return prisma.user.update({
             where: { id: userId },
             data,
+        });
+    }
+
+    async updatePlan(userId: string, plan: 'FREE' | 'PROFISSIONAL' | 'EMPRESARIAL') {
+        return prisma.user.update({
+            where: { id: userId },
+            data: { plan },
         });
     }
 }

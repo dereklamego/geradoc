@@ -6,12 +6,25 @@ export interface IUser {
     role: 'user' | 'beta' | 'admin';
     plan: 'free' | 'profissional' | 'empresarial';
     company_name?: string;
-    document?: string; // CPF/CNPJ do prestador
+    document?: string;
     phone?: string;
     address?: string;
-    logoUrl?: string; // URL da logo personalizada
-    brandColor?: string; // Cor principal da marca (HEX)
+    logoUrl?: string;
+    brandColor?: string;
     monthlyUsage: number;
+    billing?: {
+        monthlyUsage: number;
+        monthlyLimit: number | null; // null = unlimited
+        currentPeriodStart: string;
+        currentPeriodEnd: string;
+        scheduledPlan: 'FREE' | 'PROFISSIONAL' | 'EMPRESARIAL' | null;
+        scheduledPlanChangeAt: string | null;
+    };
+    subscription?: {
+        status: string;
+        currentPeriodEnd: string;
+        cancelAtPeriodEnd: boolean;
+    } | null;
 }
 
 // Catálogo de Clientes

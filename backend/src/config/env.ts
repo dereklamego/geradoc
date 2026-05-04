@@ -20,4 +20,8 @@ if (!result.success) {
     process.exit(1);
 }
 
-export const env = result.data;
+export const env = {
+    ...result.data,
+    // Allow STRIPE_API_KEY as alias (legacy naming)
+    STRIPE_SECRET_KEY: result.data.STRIPE_SECRET_KEY ?? result.data.STRIPE_API_KEY,
+};

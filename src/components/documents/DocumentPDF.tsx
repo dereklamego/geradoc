@@ -126,7 +126,7 @@ interface DocumentPDFProps {
     }>;
     total: number;
     date: string;
-    plan?: 'free' | 'premium';
+    plan?: 'free' | 'profissional' | 'empresarial';
     primaryColor?: string; // Added primaryColor
 }
 
@@ -150,7 +150,7 @@ const DocumentPDF: React.FC<DocumentPDFProps> = ({ company, client, docType, ser
             {/* Header */}
             <View style={styles.header}>
                 <View style={{ flexDirection: 'row', gap: 10 }}>
-                    {company.logoUrl && plan === 'premium' && (
+                    {company.logoUrl && plan && plan !== 'free' && (
                         <View style={{ width: 60, height: 60, overflow: 'hidden' }}>
                             <Image src={company.logoUrl} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         </View>

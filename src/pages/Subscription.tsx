@@ -1,10 +1,15 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useUser } from "@/store/useAppStore";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "react-router-dom";
+import { useUser, useAuthActions } from "@/store/useAppStore";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Check, Sparkles, Zap, Building2 } from "lucide-react";
+import { Check, CheckCircle2, Sparkles, Zap, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { api } from "@/lib/api";
+import { toast } from "sonner";
+import { DowngradeDialog } from "@/components/subscription/DowngradeDialog";
+import { SubscriptionStatusCard } from "@/components/subscription/SubscriptionStatusCard";
+import { isDowngrade, PlanId, toPlanId } from "@/lib/plans";
 
 type BillingCycle = "monthly" | "quarterly" | "yearly";
 
@@ -36,8 +41,55 @@ const planPrices: Record<string, Record<BillingCycle, string>> = {
 
 const Subscription = () => {
   const user = useUser();
-  const navigate = useNavigate();
+  const { fetchMe } = useAuthActions();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [billingCycle, setBillingCycle] = useState<BillingCycle>("monthly");
+  const [changingTo, setChangingTo] = useState<string | null>(null);
+  const [downgradeTarget, setDowngradeTarget] = useState<PlanId | null>(null);
+  const [pendingActivation, setPendingActivation] = useState(false);
+  const handledQueryRef = useRef(false);
+
+  const currentPlanId = toPlanId(user?.plan);
+  const hasPaidPlan = currentPlanId !== 'FREE';
+
+  // Handle Stripe Checkout return (success/canceled query params)
+  useEffect(() => {
+    if (handledQueryRef.current) return;
+    const success = searchParams.get('success') === 'true';
+    const canceled = searchParams.get('canceled') === 'true';
+    if (!success && !canceled) return;
+    handledQueryRef.current = true;
+
+    if (canceled) {
+      toast.info('Pagamento cancelado.');
+      setSearchParams({}, { replace: true });
+      return;
+    }
+
+    if (success) {
+      toast.success('Pagamento confirmado! Ativando seu plano...');
+      setPendingActivation(true);
+      let attempts = 0;
+      const interval = setInterval(async () => {
+        attempts++;
+        await fetchMe();
+        if (attempts >= 5) {
+          clearInterval(interval);
+          setPendingActivation(false);
+          setSearchParams({}, { replace: true });
+        }
+      }, 1500);
+      return () => clearInterval(interval);
+    }
+  }, [searchParams, setSearchParams, fetchMe]);
+
+  // When plan flips while pendingActivation is on, dismiss it
+  useEffect(() => {
+    if (pendingActivation && currentPlanId !== 'FREE') {
+      setPendingActivation(false);
+      toast.success(`Plano ${currentPlanId.toLowerCase()} ativado!`);
+    }
+  }, [currentPlanId, pendingActivation]);
 
   const plans = [
     {
@@ -53,7 +105,7 @@ const Subscription = () => {
         "Modelos básicos",
       ],
       current: user?.plan === "free",
-      action: user?.plan === "free" ? "Plano Atual" : "Fazer Downgrade",
+      action: user?.plan === "free" ? "Plano Atual" : "Fazer downgrade",
       popular: false,
     },
     {
@@ -72,7 +124,14 @@ const Subscription = () => {
       ],
       popular: true,
       current: user?.plan === "profissional",
-      action: user?.plan === "profissional" ? "Plano Ativo" : "Assinar agora",
+      action:
+        user?.plan === "profissional"
+          ? "Plano Ativo"
+          : isDowngrade(currentPlanId, "PROFISSIONAL")
+            ? "Fazer downgrade"
+            : hasPaidPlan
+              ? "Fazer upgrade"
+              : "Assinar agora",
     },
     {
       id: "EMPRESARIAL",
@@ -91,13 +150,54 @@ const Subscription = () => {
       ],
       popular: false,
       current: user?.plan === "empresarial",
-      action: user?.plan === "empresarial" ? "Plano Ativo" : "Assinar agora",
+      action:
+        user?.plan === "empresarial"
+          ? "Plano Ativo"
+          : hasPaidPlan
+            ? "Fazer upgrade"
+            : "Assinar agora",
     },
   ];
 
-  const handleSubscribe = (planId: string) => {
-    if (planId === "FREE") return;
-    navigate("/app/pagamento", { state: { plan: planId, billingCycle } });
+  const applyPlanChange = async (planId: PlanId) => {
+    setChangingTo(planId);
+    try {
+      const result = await api.auth.changePlan(planId);
+      await fetchMe();
+      if (result.kind === 'scheduled-downgrade' && result.scheduledPlanChangeAt) {
+        const date = new Date(result.scheduledPlanChangeAt).toLocaleDateString('pt-BR');
+        toast.success(`Downgrade agendado para ${date}.`);
+      } else if (result.kind === 'immediate-upgrade') {
+        toast.success(`Plano ${planId.toLowerCase()} ativado!`);
+      }
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao alterar plano.');
+    } finally {
+      setChangingTo(null);
+      setDowngradeTarget(null);
+    }
+  };
+
+  const startCheckout = async (planId: PlanId) => {
+    setChangingTo(planId);
+    try {
+      const { url } = await api.payments.createCheckout(planId, billingCycle);
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err?.body?.message || err?.message || 'Erro ao iniciar checkout.');
+      setChangingTo(null);
+    }
+  };
+
+  const handleSubscribe = (planId: PlanId) => {
+    if (planId === currentPlanId) return;
+    if (isDowngrade(currentPlanId, planId)) {
+      // Downgrade — local lazy flow with confirmation modal
+      setDowngradeTarget(planId);
+      return;
+    }
+    // Upgrade (paid) — go to Stripe Checkout
+    startCheckout(planId);
   };
 
   return (
@@ -107,6 +207,20 @@ const Subscription = () => {
         <p className="text-muted-foreground mt-1">
           Veja seu plano atual e as opções para crescer seu negócio.
         </p>
+      </div>
+
+      {pendingActivation && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900">
+          ⏳ Pagamento confirmado, aguardando ativação… O plano será atualizado em instantes.
+        </div>
+      )}
+
+      {/* Status do plano (fonte da verdade) */}
+      <SubscriptionStatusCard showPlanCTA={false} />
+
+      <div className="border-t pt-6">
+        <h3 className="text-xl font-bold tracking-tight mb-1">Comparar planos</h3>
+        <p className="text-sm text-muted-foreground">Faça upgrade para liberar mais documentos e recursos.</p>
       </div>
 
       {/* Billing cycle toggle */}
@@ -139,12 +253,19 @@ const Subscription = () => {
           <Card
             key={plan.id}
             className={`relative flex flex-col border-2 transition-all duration-300 ${
-              plan.popular
-                ? "border-primary shadow-lg md:-translate-y-2"
-                : "border-border"
-            } ${plan.current ? "bg-muted/30" : ""}`}
+              plan.current
+                ? "border-green-500 bg-green-50 shadow-lg shadow-green-100 ring-2 ring-green-400/40 md:-translate-y-2"
+                : plan.popular
+                  ? "border-primary shadow-lg md:-translate-y-2"
+                  : "border-border"
+            }`}
           >
-            {plan.popular && (
+            {plan.current && (
+              <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-green-500 text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1 shadow-md whitespace-nowrap">
+                <CheckCircle2 className="h-3 w-3" /> Plano Atual
+              </div>
+            )}
+            {!plan.current && plan.popular && (
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-primary text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 rounded-full flex items-center gap-1 shadow-md whitespace-nowrap">
                 <Sparkles className="h-3 w-3" /> Mais Escolhido
               </div>
@@ -184,17 +305,30 @@ const Subscription = () => {
               </ul>
 
               <Button
-                onClick={() => handleSubscribe(plan.id)}
-                disabled={plan.current}
+                onClick={() => handleSubscribe(plan.id as PlanId)}
+                disabled={plan.current || changingTo !== null}
                 className={`w-full font-bold h-11 ${plan.popular ? "shadow-md hover:shadow-lg" : ""}`}
                 variant={plan.popular ? "default" : "outline"}
               >
-                {plan.action}
+                {changingTo === plan.id ? 'Processando...' : plan.action}
               </Button>
             </CardContent>
           </Card>
         ))}
       </div>
+
+      {downgradeTarget && (
+        <DowngradeDialog
+          open={!!downgradeTarget}
+          onOpenChange={(open) => !open && setDowngradeTarget(null)}
+          currentPlan={currentPlanId}
+          targetPlan={downgradeTarget}
+          monthlyUsage={user?.billing?.monthlyUsage ?? 0}
+          currentPeriodEnd={user?.billing?.currentPeriodEnd ?? new Date(Date.now() + 30 * 86400000).toISOString()}
+          onConfirm={() => applyPlanChange(downgradeTarget)}
+          confirming={changingTo === downgradeTarget}
+        />
+      )}
     </div>
   );
 };

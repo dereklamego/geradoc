@@ -12,7 +12,10 @@ import { documentRoutes } from './domains/documents/documents.routes.ts';
 import { paymentsRoutes } from './domains/payments/payments.routes.ts';
 import { clientsRoutes } from './domains/clients/clients.routes.ts';
 import { servicesRoutes } from './domains/services/services.routes.ts';
+import { profileRoutes } from './domains/profile/profile.routes.ts';
+import { adminRoutes } from './domains/admin/admin.routes.ts';
 import { authenticate } from './shared/http/middlewares/auth.middleware.ts';
+import { env } from './config/env.ts';
 
 dotenv.config();
 
@@ -28,18 +31,19 @@ export const buildApp = async (): Promise<FastifyInstance> => {
         methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     });
 
-    // Provide raw body buffering for Stripe Webhooks securely
+    // Provide raw body buffering for Stripe Webhooks securely.
+    // Must run BEFORE the JSON body parser consumes the stream.
     await app.register(fastifyRawBody, {
         field: 'rawBody',
         global: false,
-        encoding: false,
-        runFirst: true,
+        encoding: false,    // keep as Buffer
+        runFirst: true,     // intercept before preParsing hooks
+        routes: ['/api/payments/webhook'], // explicit allow-list
     });
 
-    // Authentication Plugin
-    await app.register(jwt, {
-        secret: process.env.JWT_SECRET || 'fallback_secret',
-    });
+    // Authentication Plugin — uses validated env (no silent fallback)
+    await app.register(jwt, { secret: env.JWT_SECRET });
+    app.log.info({ jwtSecretLen: env.JWT_SECRET.length }, '[boot] JWT plugin registered');
 
     // Swagger Documentation
     await app.register(swagger, {
@@ -106,6 +110,8 @@ export const buildApp = async (): Promise<FastifyInstance> => {
     await app.register(paymentsRoutes, { prefix: '/api/payments' });
     await app.register(clientsRoutes, { prefix: '/api/clients' });
     await app.register(servicesRoutes, { prefix: '/api/services' });
+    await app.register(profileRoutes, { prefix: '/api/profile' });
+    await app.register(adminRoutes, { prefix: '/api/admin' });
 
     // Health Check
     app.get('/health', async () => {

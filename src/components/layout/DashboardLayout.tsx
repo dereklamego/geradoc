@@ -41,13 +41,13 @@ const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) => {
                                     {getTitle(location.pathname)}
                                 </h1>
                                 <Badge
-                                    variant={user?.plan === 'premium' ? 'default' : 'secondary'}
+                                    variant={user?.plan && user.plan !== 'free' ? 'default' : 'secondary'}
                                     className={cn(
                                         "font-bold px-2 py-0 text-[10px] uppercase tracking-wider",
-                                        user?.plan === 'premium' ? "bg-primary text-white" : "bg-slate-100 text-slate-500 border-slate-200"
+                                        user?.plan && user.plan !== 'free' ? "bg-primary text-white" : "bg-slate-100 text-slate-500 border-slate-200"
                                     )}
                                 >
-                                    {user?.plan === 'premium' ? 'Premium' : 'Gratuito'}
+                                    {user?.plan === 'empresarial' ? 'Empresarial' : user?.plan === 'profissional' ? 'Profissional' : 'Gratuito'}
                                 </Badge>
                             </div>
                         </div>

@@ -25,15 +25,28 @@ async function main() {
             email: 'pro@geradoc.com',
             name: 'Usuário Pro Teste',
             passwordHash,
-            plan: 'PREMIUM',
+            plan: 'PROFISSIONAL',
             role: 'USER',
+        },
+    });
+
+    const adminUser = await prisma.user.upsert({
+        where: { email: 'admin@geradoc.com' },
+        update: {},
+        create: {
+            email: 'admin@geradoc.com',
+            name: 'Administrador Teste',
+            passwordHash,
+            plan: 'EMPRESARIAL',
+            role: 'ADMIN',
         },
     });
 
     console.log('Seed concluído com sucesso!');
     console.log({
-        freeUser: { email: freeUser.email, plano: freeUser.plan },
-        proUser: { email: proUser.email, plano: proUser.plan },
+        freeUser: { email: freeUser.email, plano: freeUser.plan, role: freeUser.role },
+        proUser: { email: proUser.email, plano: proUser.plan, role: proUser.role },
+        adminUser: { email: adminUser.email, plano: adminUser.plan, role: adminUser.role },
     });
 }
 

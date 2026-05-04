@@ -5,7 +5,19 @@ const DB_KEYS = {
     CLIENTS: 'geradoc_mock_clients',
     DOCUMENTS: 'geradoc_mock_documents',
     SERVICES: 'geradoc_mock_services',
+    VERSION: 'geradoc_mock_version',
 };
+
+const MOCK_VERSION = '2';
+
+function resetIfStale() {
+    if (localStorage.getItem(DB_KEYS.VERSION) !== MOCK_VERSION) {
+        Object.values(DB_KEYS).forEach(k => localStorage.removeItem(k));
+        localStorage.setItem(DB_KEYS.VERSION, MOCK_VERSION);
+    }
+}
+
+resetIfStale();
 
 // Initial Seed Data
 const INITIAL_SERVICES: IService[] = [
@@ -51,7 +63,7 @@ const MOCK_USERS: IUser[] = [
         name: 'Super Admin',
         email: 'admin@geradoc.com',
         role: 'admin',
-        plan: 'premium',
+        plan: 'profissional',
         company_name: 'GeraDoc Admin Inc',
         brandColor: '#2563eb',
         monthlyUsage: 45,
@@ -61,7 +73,7 @@ const MOCK_USERS: IUser[] = [
         name: 'Usuário Pro',
         email: 'pro@geradoc.com',
         role: 'user',
-        plan: 'premium',
+        plan: 'profissional',
         company_name: 'Minha Empresa Premium',
         brandColor: '#7c3aed',
         monthlyUsage: 12,
