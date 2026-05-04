@@ -23,14 +23,13 @@ npm install
 
 ## 2. Banco de dados
 
-Suba uma instância do PostgreSQL se ainda não tiver uma:
+O projeto já tem um `docker-compose.yml` configurado dentro da pasta `backend/`. Suba o PostgreSQL com:
 
 ```bash
-docker run --name geradoc-db \
-  -e POSTGRES_PASSWORD=postgres \
-  -p 5432:5432 \
-  -d postgres
+docker compose up -d
 ```
+
+Isso sobe o Postgres em background com healthcheck automático e volume persistente. Para parar: `docker compose down`.
 
 ---
 
