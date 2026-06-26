@@ -1,0 +1,119 @@
+service: geradoc-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs22.x
+  region: us-east-1
+  stage: dev
+  environment:
+    JWT_SECRET: ${env:JWT_SECRET}
+    PORT: 3000
+
+functions:
+  authRegister:
+    handler: dist/functions/auth/auth.handler.register
+    events:
+      - httpApi:
+          path: /api/auth/register
+          method: POST
+
+  authLogin:
+    handler: dist/functions/auth/auth.handler.login
+    events:
+      - httpApi:
+          path: /api/auth/login
+          method: POST
+
+  authMe:
+    handler: dist/functions/auth/auth.handler.me
+    events:
+      - httpApi:
+          path: /api/auth/me
+          method: GET
+
+  docList:
+    handler: dist/functions/documents/documents.handler.list
+    events:
+      - httpApi:
+          path: /api/documents
+          method: GET
+
+  docCreate:
+    handler: dist/functions/documents/documents.handler.create
+    events:
+      - httpApi:
+          path: /api/documents
+          method: POST
+
+  docGet:
+    handler: dist/functions/documents/documents.handler.get
+    events:
+      - httpApi:
+          path: /api/documents/{id}
+          method: GET
+
+  docUpdate:
+    handler: dist/functions/documents/documents.handler.update
+    events:
+      - httpApi:
+          path: /api/documents/{id}
+          method: PATCH
+
+  docDelete:
+    handler: dist/functions/documents/documents.handler.remove
+    events:
+      - httpApi:
+          path: /api/documents/{id}
+          method: DELETE
+
+  docAutosave:
+    handler: dist/functions/documents/documents.handler.autosave
+    events:
+      - httpApi:
+          path: /api/documents/{id}/autosave
+          method: PUT
+
+  docExport:
+    handler: dist/functions/documents/documents.handler.export
+    events:
+      - httpApi:
+          path: /api/documents/{id}/export
+          method: GET
+
+  payPlans:
+    handler: dist/functions/payments/payments.handler.getPlans
+    events:
+      - httpApi:
+          path: /api/payments/plans
+          method: GET
+
+  payCheckout:
+    handler: dist/functions/payments/payments.handler.createCheckout
+    events:
+      - httpApi:
+          path: /api/payments/create-checkout-session
+          method: POST
+
+  payPortal:
+    handler: dist/functions/payments/payments.handler.createPortal
+    events:
+      - httpApi:
+          path: /api/payments/create-portal-session
+          method: POST
+
+  payWebhook:
+    handler: dist/functions/payments/payments.handler.webhook
+    events:
+      - httpApi:
+          path: /api/payments/webhook
+          method: POST
+
+  api:
+    handler: dist/handler.handler
+    events:
+      - httpApi: '*'
+
+plugins:
+  - serverless-offline
