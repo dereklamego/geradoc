@@ -10,6 +10,10 @@ export default defineConfig(() => ({
     hmr: {
       overlay: false,
     },
+    watch: {
+      // Native fs events are unreliable for files under /mnt/c in WSL2.
+      usePolling: true,
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:3000',

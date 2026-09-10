@@ -14,6 +14,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Reports from "./pages/Reports";
 import Generator from "./pages/Generator";
 import Profile from "./pages/Profile";
 import Services from "./pages/Services";
@@ -86,6 +87,7 @@ const App = () => {
             }
           >
             <Route index element={<Dashboard />} />
+            <Route path="relatorios" element={<Reports />} />
             <Route path="gerador" element={<Generator />} />
             <Route path="clientes" element={<Clients />} />
             <Route path="clientes/:id" element={<ClientDetails />} />

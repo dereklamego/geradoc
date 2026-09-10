@@ -20,12 +20,12 @@ async function main() {
 
     const proUser = await prisma.user.upsert({
         where: { email: 'pro@geradoc.com' },
-        update: {},
+        update: { plan: 'EMPRESARIAL' },
         create: {
             email: 'pro@geradoc.com',
             name: 'Usuário Pro Teste',
             passwordHash,
-            plan: 'PROFISSIONAL',
+            plan: 'EMPRESARIAL',
             role: 'USER',
         },
     });
