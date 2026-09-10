@@ -2,14 +2,34 @@ service: geradoc-backend
 
 frameworkVersion: '3'
 
+custom:
+  # Custom domain for the API (requires an ACM certificate in the SAME region
+  # as provider.region, and a Route 53 hosted zone for the root domain).
+  # Run `npx serverless create_domain` once before the first deploy to
+  # provision the domain mapping (see backend/README.md).
+  customDomain:
+    domainName: ${env:API_DOMAIN, ''}
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: true
+    endpointType: regional
+
 provider:
   name: aws
   runtime: nodejs22.x
   region: us-east-1
   stage: dev
   environment:
+    NODE_ENV: ${env:NODE_ENV, 'production'}
+    DATABASE_URL: ${env:DATABASE_URL}
     JWT_SECRET: ${env:JWT_SECRET}
     PORT: 3000
+    FRONTEND_URL: ${env:FRONTEND_URL}
+    STRIPE_PUBLIC_KEY: ${env:STRIPE_PUBLIC_KEY, ''}
+    STRIPE_SECRET_KEY: ${env:STRIPE_SECRET_KEY, ''}
+    STRIPE_WEBHOOK_SECRET: ${env:STRIPE_WEBHOOK_SECRET, ''}
+    COOKIE_SAMESITE: ${env:COOKIE_SAMESITE, 'none'}
+    COOKIE_DOMAIN: ${env:COOKIE_DOMAIN, ''}
 
 functions:
   authRegister:
@@ -116,4 +136,5 @@ functions:
       - httpApi: '*'
 
 plugins:
+  - serverless-domain-manager
   - serverless-offline
