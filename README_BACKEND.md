@@ -28,18 +28,57 @@ model User {
   email         String     @unique
   passwordHash  String
   name          String
+  role          Role       @default(USER)
   plan          Plan       @default(FREE)
-  
+
   stripeCustomerId     String?  @unique
   stripeSubscriptionId String?  @unique
   subscription         Subscription?
 
-  documents     Document[]
-  clients       Client[]
-  services      Service[]
-  
-  createdAt     DateTime   @default(now())
-  updatedAt     DateTime   @updatedAt
+  // Ciclo de cobrança (aplicado localmente; espelha o período do Stripe)
+  currentPeriodStart      DateTime  @default(now())
+  currentPeriodEnd        DateTime  @default(now())
+  monthlyUsage            Int       @default(0)
+
+  // Downgrade agendado (aplicado no fim do período atual)
+  scheduledPlan           Plan?
+  scheduledPlanChangeAt   DateTime?
+
+  documents      Document[]
+  folders        Folder[]
+  clients        Client[]
+  services       Service[]
+  companyProfile CompanyProfile?
+  planEvents     PlanEvent[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model Subscription {
+  id                 String   @id @default(uuid())
+  userId             String   @unique
+  user               User     @relation(fields: [userId], references: [id])
+  status             String   // active, trialing, past_due, canceled
+  priceId            String
+  billingCycle       String?  // monthly, quarterly, yearly
+  currentPeriodEnd   DateTime
+  cancelAtPeriodEnd  Boolean  @default(false)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model CompanyProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  name        String?
+  document    String?
+  phone       String?
+  address     String?
+  brandColor  String   @default("#2563eb")
+  logoStorage String?  @db.Text // base64 data URL (candidato a virar chave S3 no futuro)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Client {
@@ -68,11 +107,55 @@ model Document {
   title       String   // Identificador auto-mapeado do Frontend (Ex: Tipo - Cliente)
   content     Json     // Contém a payload estruturada integral (itens, valores)
   status      Status   @default(DRAFT)
+  version     Int      @default(1)
   isDeleted   Boolean  @default(false)
   userId      String
   user        User     @relation(fields: [userId], references: [id])
+  folderId    String?
+  folder      Folder?  @relation(fields: [folderId], references: [id])
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id])
+}
+
+model Folder {
+  id        String     @id @default(uuid())
+  name      String
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  documents Document[]
+}
+
+model Template {
+  id          String     @id @default(uuid())
+  name        String
+  description String
+  structure   Json
+  category    String
+  documents   Document[]
+}
+
+// Idempotência de webhook
+model StripeEvent {
+  id        String   @id // Webhook event ID
+  type      String
+  createdAt DateTime @default(now())
+}
+
+// Auditoria de mudanças de plano (upgrade, downgrade, cancelamento, admin)
+model PlanEvent {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  fromPlan   String
+  toPlan     String
+  eventType  String   // upgrade | downgrade | cancel | admin_change
+  actorId    String?  // null = sistema/stripe, userId = self, adminId = admin
+  metadata   Json?
+  createdAt  DateTime @default(now())
 }
 ```
+
+> Schema completo em [`backend/prisma/schema.prisma`](backend/prisma/schema.prisma).
 
 ---
 
@@ -96,7 +179,17 @@ model Document {
 
 ### 3.4 Assinaturas Stripe (`/api/payments`)
 - `POST /create-checkout-session`: Gera uma URL oficial do Servidor do **Stripe** de alta-segurança de acordo com os _Price ID_ de planos anuais/mensais do `.env`.
-- `POST /webhook`: Rota isolada do CORS/Parse padrão onde um bypass especial em Buffer Nativo autentica os pacotes webhook, executando upscales no Prisma `User.plan` dependendo dos estados emitidos pelo Node do Stripe ("checkout completed", "updated", "deleted").
+- `POST /create-portal-session`: Cria uma sessão do **Stripe Customer Portal** (gestão de método de pagamento, faturas e cancelamento pelo próprio cliente).
+- `GET  /method`: Retorna o método de pagamento padrão do usuário (bandeira, últimos 4 dígitos, validade).
+- `POST /cancel-subscription`: Cancela a assinatura ao fim do período atual (`cancel_at_period_end: true`), sem cancelamento imediato.
+- `POST /webhook`: Rota isolada do CORS/Parse padrão onde um bypass especial em Buffer Nativo autentica os pacotes webhook, executando upscales no Prisma `User.plan` dependendo dos estados emitidos pelo Node do Stripe ("checkout completed", "updated", "deleted"). Idempotência garantida pela tabela `StripeEvent`.
+
+### 3.5 Mudança de plano sem Stripe (dev) e Admin
+- `PATCH /api/auth/plan`: troca de plano local — upgrades aplicam na hora, downgrades ficam agendados (`scheduledPlan`/`scheduledPlanChangeAt`) e só entram em vigor no próximo `currentPeriodEnd`, aplicados via `syncBilling` na requisição seguinte autenticada.
+- `DELETE /api/auth/plan/scheduled`: cancela um downgrade agendado.
+- `GET /api/admin/stats`, `GET /api/admin/users`, `GET /api/admin/finance`, `GET /api/admin/events`, `PATCH /api/admin/users/:id/plan`, `PATCH /api/admin/users/:id/role`: painel administrativo (somente `role: ADMIN`), com KPIs, listagem de usuários/assinaturas e log de auditoria (`PlanEvent`).
+
+> **Nota de implementação:** as rotas de `documents`, `clients` e `services` autenticam via `request.jwtVerify()` (plugin `@fastify/jwt`, que também lê o cookie `geradoc_token`), um caminho **diferente** da middleware `authenticate` usada por `auth`, `payments` e `admin`. Isso significa que elas não disparam `syncBilling` a cada request — o rollover de ciclo e a aplicação de downgrades agendados só acontecem quando o usuário bate em rotas que passam pela middleware `authenticate` (ex.: `GET /api/auth/me`).
 
 ---
 
@@ -112,7 +205,8 @@ DATABASE_URL="postgresql://postgres:suasenha@localhost:5432/geradoc?schema=publi
 JWT_SECRET="secretao_aqui"
 
 # Integração Stripe
-STRIPE_SECRET_KEY="sk_test_..."
+STRIPE_PUBLIC_KEY="pk_test_..."
+STRIPE_SECRET_KEY="sk_test_..."   # aceita também STRIPE_API_KEY como alias legado
 STRIPE_WEBHOOK_SECRET="whsec_..."
 
 # --- CORS + Cookie de autenticação ---

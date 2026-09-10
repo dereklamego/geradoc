@@ -74,6 +74,7 @@ Após rodar o seed do backend (`npx prisma db seed`), estes usuários estarão d
 | `/app/documentos` | Lista de documentos |
 | `/app/gerador` | Gerador de documentos |
 | `/app/clientes` | Gestão de clientes |
+| `/app/clientes/:id` | Detalhe de um cliente |
 | `/app/servicos` | Catálogo de serviços |
 | `/app/assinatura` | Planos e assinatura |
 | `/app/perfil` | Perfil da empresa |
