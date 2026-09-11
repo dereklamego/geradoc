@@ -24,6 +24,7 @@ import {
     Package,
     Box,
     CreditCard,
+    BarChart3,
 } from 'lucide-react';
 
 const menuItems = [
@@ -70,6 +71,19 @@ const AppSidebar = () => {
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
                             ))}
+
+                            {user?.plan === 'empresarial' && (
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton
+                                        onClick={() => navigate('/app/relatorios')}
+                                        isActive={location.pathname === '/app/relatorios'}
+                                        tooltip="Relatórios"
+                                    >
+                                        <BarChart3 />
+                                        <span>Relatórios</span>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                            )}
 
                             {user?.role === 'admin' && (
                                 <SidebarMenuItem>
